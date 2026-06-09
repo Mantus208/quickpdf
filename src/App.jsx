@@ -5,6 +5,7 @@ import SplitPDF from "./tools/SplitPDF";
 import PDFtoJPG from "./tools/PDFtoJPG";
 import JPGtoPDF from "./tools/JPGtoPDF";
 import PageCounter from "./tools/PageCounter";
+import Logo from "./components/Logo";
 import "./App.css";
 
 const tools = [
@@ -92,7 +93,8 @@ export default function App() {
       {/* Navbar */}
       <nav className="navbar">
         <div className="nav-logo" onClick={() => setActiveTool(null)}>
-          ⚡ QuickPDF
+          <Logo className="nav-logo-icon" />
+          <span>QuickPDF</span>
         </div>
         <div className={`nav-links ${menuOpen ? "open" : ""}`}>
           {tools.map((tool) => (
@@ -153,7 +155,16 @@ export default function App() {
       <footer>
         <div className="footer-inner">
           <span>© 2026 QuickPDF — All rights reserved</span>
-          <span>Powered by ArkaSoft 🚀</span>
+
+          <a
+            href="https://arkasoft.in"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="powered-by"
+          >
+            <Logo className="footer-logo" />
+            <span>Powered by ArkaSoft 🚀</span>
+          </a>
         </div>
       </footer>
     </div>
