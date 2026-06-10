@@ -1,14 +1,67 @@
 import { useState } from "react";
 import { PDFDocument } from "pdf-lib";
+import * as pdfjsLib from "pdfjs-dist";
+import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
+
+pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
+  "pdfjs-dist/build/pdf.worker.min.mjs",
+  import.meta.url,
+).toString();
 
 export default function MergePDF() {
   const [files, setFiles] = useState([]);
+  // const [previews, setPreviews] = useState([]);
   const [merging, setMerging] = useState(false);
   const [done, setDone] = useState(false);
 
-  const handleFiles = (e) => {
-    setFiles([...e.target.files]);
+  const generatePreview = async (file) => {
+    const arrayBuffer = await file.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+    const page = await pdf.getPage(1);
+    const viewport = page.getViewport({ scale: 0.4 });
+    const canvas = document.createElement("canvas");
+    canvas.width = viewport.width;
+    canvas.height = viewport.height;
+    const ctx = canvas.getContext("2d");
+    await page.render({ canvasContext: ctx, viewport }).promise;
+    return canvas.toDataURL("image/jpeg", 0.7);
+  };
+
+  const handleFiles = async (e) => {
+    const selected = [...e.target.files];
+    if (selected.length === 0) return;
     setDone(false);
+
+    const newPreviews = await Promise.all(selected.map(generatePreview));
+
+    const newItems = selected.map((file, i) => ({
+      id: `${Date.now()}_${i}`,
+      file,
+      preview: newPreviews[i],
+      pageCount: 0,
+    }));
+
+    // Get page counts
+    for (const item of newItems) {
+      const ab = await item.file.arrayBuffer();
+      const pdf = await PDFDocument.load(ab);
+      item.pageCount = pdf.getPageCount();
+    }
+
+    setFiles((prev) => [...prev, ...newItems]);
+    // setPreviews((prev) => [...prev, ...newPreviews]);
+  };
+
+  const handleDragEnd = (result) => {
+    if (!result.destination) return;
+    const reordered = [...files];
+    const [moved] = reordered.splice(result.source.index, 1);
+    reordered.splice(result.destination.index, 0, moved);
+    setFiles(reordered);
+  };
+
+  const removeFile = (id) => {
+    setFiles((prev) => prev.filter((f) => f.id !== id));
   };
 
   const mergePDFs = async () => {
@@ -17,13 +70,15 @@ export default function MergePDF() {
       return;
     }
     setMerging(true);
+
     const mergedPdf = await PDFDocument.create();
-    for (const file of files) {
-      const arrayBuffer = await file.arrayBuffer();
+    for (const item of files) {
+      const arrayBuffer = await item.file.arrayBuffer();
       const pdf = await PDFDocument.load(arrayBuffer);
       const pages = await mergedPdf.copyPages(pdf, pdf.getPageIndices());
       pages.forEach((page) => mergedPdf.addPage(page));
     }
+
     const mergedBytes = await mergedPdf.save();
     const blob = new Blob([mergedBytes], { type: "application/pdf" });
     const url = URL.createObjectURL(blob);
@@ -31,6 +86,7 @@ export default function MergePDF() {
     a.href = url;
     a.download = "merged.pdf";
     a.click();
+
     setMerging(false);
     setDone(true);
   };
@@ -39,7 +95,7 @@ export default function MergePDF() {
     <div className="tool-container">
       <h2>🔗 Merge PDF</h2>
       <p className="tool-desc">
-        Combine multiple PDF files into one single document.
+        Combine multiple PDF files into one. Drag to reorder before merging.
       </p>
 
       <div className="upload-box">
@@ -51,20 +107,70 @@ export default function MergePDF() {
           id="merge-input"
         />
         <label htmlFor="merge-input" className="upload-label">
-          📂 Select PDF Files
+          {files.length === 0 ? "📂 Select PDF Files" : "➕ Add More Files"}
         </label>
-        <p className="upload-hint">Select 2 or more PDF files</p>
+        <p className="upload-hint">Select 2 or more PDF files to merge</p>
       </div>
 
       {files.length > 0 && (
-        <div className="file-list">
-          <p>✅ {files.length} files selected:</p>
-          {[...files].map((f, i) => (
-            <div key={i} className="file-item">
-              📄 {f.name}
-            </div>
-          ))}
-        </div>
+        <>
+          <p className="options-label">
+            {files.length} file{files.length > 1 ? "s" : ""} — Drag to reorder:
+          </p>
+
+          <DragDropContext onDragEnd={handleDragEnd}>
+            <Droppable droppableId="pdf-list">
+              {(provided) => (
+                <div
+                  className="merge-preview-list"
+                  {...provided.droppableProps}
+                  ref={provided.innerRef}
+                >
+                  {files.map((item, index) => (
+                    <Draggable
+                      key={item.id}
+                      draggableId={item.id}
+                      index={index}
+                    >
+                      {(provided, snapshot) => (
+                        <div
+                          className={`merge-preview-item ${snapshot.isDragging ? "dragging" : ""}`}
+                          ref={provided.innerRef}
+                          {...provided.draggableProps}
+                          {...provided.dragHandleProps}
+                        >
+                          <div className="merge-preview-thumb">
+                            <img src={item.preview} alt={item.file.name} />
+                            <span className="merge-page-badge">
+                              {item.pageCount}p
+                            </span>
+                          </div>
+                          <div className="merge-preview-info">
+                            <p className="merge-file-name">{item.file.name}</p>
+                            <p className="merge-file-meta">
+                              {item.pageCount} pages ·{" "}
+                              {(item.file.size / 1024).toFixed(1)} KB
+                            </p>
+                          </div>
+                          <div className="merge-preview-actions">
+                            <span className="drag-handle">⠿</span>
+                            <button
+                              className="remove-btn"
+                              onClick={() => removeFile(item.id)}
+                            >
+                              ✕
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </Draggable>
+                  ))}
+                  {provided.placeholder}
+                </div>
+              )}
+            </Droppable>
+          </DragDropContext>
+        </>
       )}
 
       <button
