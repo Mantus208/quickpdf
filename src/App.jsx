@@ -6,6 +6,7 @@ import PDFtoJPG from "./tools/PDFtoJPG";
 import JPGtoPDF from "./tools/JPGtoPDF";
 import PageCounter from "./tools/PageCounter";
 import Logo from "./components/Logo";
+import UnlockPDF from "./tools/UnlockPDF";
 import "./App.css";
 
 const tools = [
@@ -63,6 +64,15 @@ const tools = [
     iconBg: "#f0ecff",
     tag: "New",
   },
+  {
+    id: "unlock",
+    icon: "🔓",
+    name: "Unlock PDF",
+    desc: "Remove password protection from PDF files instantly.",
+    accent: "#f39c12",
+    iconBg: "#fff9e6",
+    tag: null,
+  },
 ];
 
 export default function App() {
@@ -83,6 +93,8 @@ export default function App() {
         return <JPGtoPDF />;
       case "counter":
         return <PageCounter />;
+      case "unlock":
+        return <UnlockPDF />;
       default:
         return null;
     }

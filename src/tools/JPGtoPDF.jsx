@@ -125,9 +125,20 @@ export default function JPGtoPDF() {
       </button>
 
       {done && (
-        <p className="success-msg">
-          ✅ Converted successfully! Download started.
-        </p>
+        <>
+          <p className="success-msg">
+            ✅ Converted successfully! Download started.
+          </p>
+          <button
+            className="reset-btn"
+            onClick={() => {
+              setFiles([]);
+              setDone(false);
+            }}
+          >
+            🔄 Convert More Images
+          </button>
+        </>
       )}
     </div>
   );

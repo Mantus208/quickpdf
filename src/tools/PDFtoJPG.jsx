@@ -188,9 +188,22 @@ export default function PDFtoJPG() {
       </button>
 
       {done && (
-        <p className="success-msg">
-          ✅ Converted successfully! ZIP download started.
-        </p>
+        <>
+          <p className="success-msg">
+            ✅ Converted successfully! ZIP download started.
+          </p>
+          <button
+            className="reset-btn"
+            onClick={() => {
+              setFile(null);
+              setDone(false);
+              setPageCount(0);
+              setProgress(0);
+            }}
+          >
+            🔄 Convert Another PDF
+          </button>
+        </>
       )}
     </div>
   );

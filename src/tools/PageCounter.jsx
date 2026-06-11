@@ -294,9 +294,35 @@ export default function PageCounter() {
       </button>
 
       {done && results.length > 1 && (
-        <p className="success-msg">
-          ✅ Done! Excel file downloaded successfully.
-        </p>
+        <>
+          <p className="success-msg">
+            ✅ Done! Excel file downloaded successfully.
+          </p>
+          <button
+            className="reset-btn"
+            onClick={() => {
+              setFiles([]);
+              setFolderFiles([]);
+              setResults([]);
+              setDone(false);
+            }}
+          >
+            🔄 Count More PDFs
+          </button>
+        </>
+      )}
+
+      {done && results.length === 1 && (
+        <button
+          className="reset-btn"
+          onClick={() => {
+            setFiles([]);
+            setResults([]);
+            setDone(false);
+          }}
+        >
+          🔄 Count Another PDF
+        </button>
       )}
     </div>
   );

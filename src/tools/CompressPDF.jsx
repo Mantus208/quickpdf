@@ -224,9 +224,22 @@ export default function CompressPDF() {
       </button>
 
       {done && (
-        <p className="success-msg">
-          ✅ PDF compressed successfully! Download started.
-        </p>
+        <>
+          <p className="success-msg">
+            ✅ PDF compressed successfully! Download started.
+          </p>
+          <button
+            className="reset-btn"
+            onClick={() => {
+              setFile(null);
+              setDone(false);
+              setStats(null);
+              setProgress(0);
+            }}
+          >
+            🔄 Compress Another PDF
+          </button>
+        </>
       )}
     </div>
   );

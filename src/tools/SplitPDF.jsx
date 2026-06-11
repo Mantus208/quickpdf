@@ -179,9 +179,21 @@ export default function SplitPDF() {
       </button>
 
       {done && (
-        <p className="success-msg">
-          ✅ PDF split successfully! Download started.
-        </p>
+        <>
+          <p className="success-msg">
+            ✅ PDF split successfully! Download started.
+          </p>
+          <button
+            className="reset-btn"
+            onClick={() => {
+              setFile(null);
+              setDone(false);
+              setPageCount(0);
+            }}
+          >
+            🔄 Split Another PDF
+          </button>
+        </>
       )}
     </div>
   );

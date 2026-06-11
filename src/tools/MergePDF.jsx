@@ -182,9 +182,20 @@ export default function MergePDF() {
       </button>
 
       {done && (
-        <p className="success-msg">
-          ✅ PDF merged successfully! Download started.
-        </p>
+        <>
+          <p className="success-msg">
+            ✅ PDF merged successfully! Download started.
+          </p>
+          <button
+            className="reset-btn"
+            onClick={() => {
+              setFiles([]);
+              setDone(false);
+            }}
+          >
+            🔄 Merge Another PDF
+          </button>
+        </>
       )}
     </div>
   );
