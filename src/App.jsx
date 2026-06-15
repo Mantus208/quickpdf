@@ -7,6 +7,7 @@ import JPGtoPDF from "./tools/JPGtoPDF";
 import PageCounter from "./tools/PageCounter";
 import Logo from "./components/Logo";
 import UnlockPDF from "./tools/UnlockPDF";
+import EditPDF from "./tools/EditPDF";
 import "./App.css";
 
 const tools = [
@@ -73,6 +74,28 @@ const tools = [
     iconBg: "#fff9e6",
     tag: null,
   },
+  {
+    id: "editpdf",
+    name: "Edit PDF",
+    desc: "PDF mein text add karein, annotations dalein aur document ko modify karein.",
+    icon: (
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        viewBox="0 0 24 24"
+        width="24"
+        height="24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+      >
+        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+        <path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+      </svg>
+    ),
+    accent: "#00b4d8",
+    iconBg: "rgba(0, 180, 216, 0.1)",
+    tag: "New",
+  },
 ];
 
 export default function App() {
@@ -95,6 +118,8 @@ export default function App() {
         return <PageCounter />;
       case "unlock":
         return <UnlockPDF />;
+      case "editpdf":
+        return <EditPDF />;
       default:
         return null;
     }
@@ -126,7 +151,6 @@ export default function App() {
           ☰
         </button>
       </nav>
-
       {/* Hero */}
       {!activeTool && (
         <div className="hero">
@@ -134,10 +158,10 @@ export default function App() {
           <p>100% Free · Fast · Secure · No signup required</p>
         </div>
       )}
-
-      {/* Tools Grid */}
+      {/* Tools Grid */}{" "}
       {!activeTool ? (
         <main className="grid">
+          {" "}
           {tools.map((tool) => (
             <div
               key={tool.id}
@@ -145,25 +169,29 @@ export default function App() {
               style={{ "--accent": tool.accent, "--icon-bg": tool.iconBg }}
               onClick={() => setActiveTool(tool.id)}
             >
+              {" "}
               <div className="card-top">
-                <div className="card-icon">{tool.icon}</div>
-                {tool.tag && <span className="tag">{tool.tag}</span>}
-              </div>
-              <h2>{tool.name}</h2>
-              <p>{tool.desc}</p>
-              <span className="card-link">Use Tool →</span>
+                {" "}
+                <div className="card-icon">{tool.icon}</div>{" "}
+                {tool.tag && <span className="tag">{tool.tag}</span>}{" "}
+              </div>{" "}
+              <h2>{tool.name}</h2> <p>{tool.desc}</p>{" "}
+              <span className="card-link">Use Tool →</span>{" "}
             </div>
-          ))}
+          ))}{" "}
         </main>
+      ) : activeTool === "editpdf" ? (
+        <EditPDF />
       ) : (
         <main className="tool-page">
+          {" "}
           <button className="back-btn" onClick={() => setActiveTool(null)}>
-            ← Back to All Tools
-          </button>
-          {renderTool()}
+            {" "}
+            ← Back to All Tools{" "}
+          </button>{" "}
+          {renderTool()}{" "}
         </main>
       )}
-
       <footer>
         <div className="footer-inner">
           <span>© 2026 QuickPDF — All rights reserved</span>

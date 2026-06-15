@@ -110,6 +110,364 @@ body {
   color: #fff;
 }
 
+/* EditPDF  */
+.advanced-editor-container {
+  display: grid;
+  grid-template-columns: 200px 1fr 220px;
+  gap: 1rem;
+  padding: 1rem;
+}
+
+.pages-panel,
+.tools-panel {
+  background: #fff;
+  border: 1.5px solid #ede9ff;
+  border-radius: 12px;
+  padding: 1rem;
+  align-self: start;
+}
+
+.pages-panel h3,
+.tools-panel h3 {
+  font-size: 0.95rem;
+  margin-bottom: 1rem;
+  color: #1a1040;
+}
+
+.upload-pdf-btn {
+  display: block;
+  text-align: center;
+  background: #6C3FF5;
+  color: #fff;
+  padding: 0.6rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+}
+
+.pages-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+.page-thumb {
+  position: relative;
+  border: 1.5px solid #ede9ff;
+  border-radius: 8px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: border 0.2s;
+}
+
+.page-thumb img {
+  width: 100%;
+  display: block;
+}
+
+.page-thumb.active {
+  border-color: #6C3FF5;
+  box-shadow: 0 0 0 2px rgba(108, 63, 245, 0.2);
+}
+
+.page-number {
+  position: absolute;
+  bottom: 4px;
+  right: 4px;
+  background: rgba(26, 16, 64, 0.7);
+  color: #fff;
+  font-size: 0.7rem;
+  padding: 1px 6px;
+  border-radius: 6px;
+}
+
+.editor-center {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+  overflow: auto;
+}
+
+.top-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #fff;
+  border: 1.5px solid #ede9ff;
+  border-radius: 10px;
+  padding: 0.6rem 1rem;
+}
+
+.toolbar-center {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.zoom-btn {
+  width: 28px;
+  height: 28px;
+  border: 1.5px solid #ede9ff;
+  background: #f8f7ff;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 1rem;
+  color: #6C3FF5;
+}
+
+.zoom-level {
+  font-size: 0.85rem;
+  color: #1a1040;
+  min-width: 45px;
+  text-align: center;
+}
+
+.page-indicator {
+  font-size: 0.85rem;
+  color: #7c6fac;
+  font-weight: 600;
+}
+
+.upload-new-btn {
+  background: none;
+  border: 1.5px solid #6C3FF5;
+  color: #6C3FF5;
+  padding: 0.4rem 0.9rem;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.canvas-wrapper {
+  position: relative;
+  margin: 0 auto;
+  background: #fff;
+  box-shadow: 0 4px 16px rgba(108, 63, 245, 0.08);
+}
+
+.canvas-wrapper canvas {
+  display: block;
+}
+
+.fabric-canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+.canvas-wrapper .canvas-container {
+  position: absolute !important;
+  top: 0;
+  left: 0;
+}
+
+.tool-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.7rem 0.8rem;
+  margin-bottom: 0.6rem;
+  background: #f8f7ff;
+  border: 1.5px solid #ede9ff;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.88rem;
+  color: #1a1040;
+  font-weight: 600;
+  transition: all 0.2s;
+}
+
+.tool-btn:hover {
+  border-color: #a98fff;
+  background: #f0ecff;
+}
+
+.tool-btn.danger {
+  color: #e74c3c;
+}
+
+.tool-btn.danger:hover {
+  background: #fff0f0;
+  border-color: #ffb3b3;
+}
+
+.file-tool-btn input {
+  display: none;
+}
+
+.tool-icon {
+  font-size: 1rem;
+}
+
+.tool-divider {
+  height: 1.5px;
+  background: #ede9ff;
+  margin: 0.8rem 0;
+}
+
+.undo-redo-row {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.tool-btn.small {
+  padding: 0.5rem;
+  font-size: 0.8rem;
+  justify-content: center;
+}
+
+.tool-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.tool-tip {
+  margin-top: 1rem;
+  font-size: 0.78rem;
+  color: #a398c9;
+  background: #f8f7ff;
+  border-radius: 8px;
+  padding: 0.7rem;
+  line-height: 1.5;
+}
+
+.save-bar {
+  grid-column: 1 / -1;
+  margin-top: 0.5rem;
+}
+
+.save-pdf-btn {
+  max-width: 300px;
+  margin: 0 auto;
+}
+
+@media (max-width: 900px) {
+  .advanced-editor-container {
+    grid-template-columns: 1fr;
+  }
+
+  .pages-list {
+    flex-direction: row;
+    overflow-x: auto;
+    max-height: none;
+  }
+
+  .page-thumb {
+    min-width: 80px;
+  }
+}
+
+.edit-pdf-container {
+  max-width: 100% !important;
+  width: 100%;
+  padding: 1.5rem;
+}
+
+.edit-header {
+  margin-bottom: 1rem;
+}
+
+.edit-page-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.nav-btn {
+  background: #f8f7ff;
+  border: 1.5px solid #ede9ff;
+  color: #6C3FF5;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.nav-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.edit-canvas-wrapper {
+  position: relative;
+  margin: 0 auto;
+  border: 1.5px solid #ede9ff;
+  box-shadow: 0 4px 16px rgba(108, 63, 245, 0.08);
+  margin: 0 auto;
+  overflow: visible;
+}
+
+.edit-canvas-wrapper img {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.edited-text-preview {
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  white-space: nowrap;
+  overflow: visible;
+  font-family: Arial, sans-serif;
+  color: #1a1040;
+  line-height: 1;
+  padding: 0 1px;
+  min-width: 100%;
+  z-index: 2;
+}
+
+.edit-text-overlay {
+  position: absolute;
+  cursor: text;
+  transition: background 0.15s;
+}
+
+.edit-text-overlay:hover {
+  background: rgba(108, 63, 245, 0.15);
+  outline: 1px dashed #6C3FF5;
+}
+
+.edit-text-overlay.edited {
+  background: rgba(0, 184, 148, 0.15);
+  outline: 1px solid #00b894;
+}
+
+.edit-text-input {
+  position: absolute;
+  border: 1.5px solid #6C3FF5;
+  background: #fff;
+  outline: none;
+  padding: 0 2px;
+  font-family: Arial, sans-serif;
+  z-index: 10;
+}
+
+.edit-actions {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.edit-actions .reset-btn,
+.edit-actions .action-btn {
+  flex: 1;
+  margin-top: 0;
+}
+
 /* GRID */
 .grid {
   display: grid;
@@ -196,9 +554,8 @@ body {
 
 /* TOOL PAGE */
 .tool-page {
-  max-width: 700px;
-  margin: 2rem auto;
-  padding: 0 1.5rem;
+  height: calc(100vh - 70px);
+  overflow: hidden;
 }
 
 .back-btn {
@@ -248,6 +605,16 @@ body {
 
 .upload-box input {
   display: none;
+}
+
+.upload-btn {
+  background: #6C3FF5;
+  color: white;
+  padding: 10px 14px;
+  border-radius: 10px;
+  text-align: center;
+  cursor: pointer;
+  font-weight: 600;
 }
 
 .upload-label {
@@ -320,9 +687,10 @@ body {
 
 /* FOOTER */
 footer {
-  border-top: 1.5px solid #ede9ff;
+  /* border-top: 1.5px solid #ede9ff;
   margin-top: 3rem;
-  padding: 1.5rem 2rem;
+  padding: 1.5rem 2rem; */
+  display: none;
 }
 
 .footer-inner {
