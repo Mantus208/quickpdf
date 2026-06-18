@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-const BACKEND_URL = "https://quickpdf-backend-zphl.onrender.com";
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
 
 export default function EditPDF() {
   const [file, setFile] = useState(null);
@@ -9,10 +9,11 @@ export default function EditPDF() {
   const [saving, setSaving] = useState(false);
   const [editingIndex, setEditingIndex] = useState(null);
   const [edits, setEdits] = useState({});
+  const [positions, setPositions] = useState({}); // { "page-blockIndex": {x, y} }
   const wrapperRef = useRef(null);
   const [scale, setScale] = useState(1);
+  const dragState = useRef(null);
 
-  // ✅ useEffect yahan — component ke top level pe
   useEffect(() => {
     if (pages.length === 0) return;
 
@@ -36,6 +37,7 @@ export default function EditPDF() {
     setLoading(true);
     setPages([]);
     setEdits({});
+    setPositions({});
 
     const formData = new FormData();
     formData.append("file", selected);
@@ -67,6 +69,55 @@ export default function EditPDF() {
     return edits[key] !== undefined ? edits[key] : originalText;
   };
 
+  const getPosition = (blockIndex, block) => {
+    const key = `${currentPage}-${blockIndex}`;
+    return positions[key] || { x: block.x, y: block.y };
+  };
+
+  // Approx text width estimate karo (canvas measureText)
+  const estimateTextWidth = (text, fontSize, isBold) => {
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d");
+    ctx.font = `${isBold ? "bold " : ""}${fontSize}px Arial`;
+    return ctx.measureText(text).width;
+  };
+
+  // --- Drag handlers ---
+  const handleDragStart = (e, blockIndex, block) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const pos = getPosition(blockIndex, block);
+    dragState.current = {
+      blockIndex,
+      startMouseX: e.clientX,
+      startMouseY: e.clientY,
+      startX: pos.x,
+      startY: pos.y,
+    };
+    window.addEventListener("mousemove", handleDragMove);
+    window.addEventListener("mouseup", handleDragEnd);
+  };
+
+  const handleDragMove = (e) => {
+    if (!dragState.current) return;
+    const { blockIndex, startMouseX, startMouseY, startX, startY } =
+      dragState.current;
+    const dx = (e.clientX - startMouseX) / scale;
+    const dy = (e.clientY - startMouseY) / scale;
+
+    const key = `${currentPage}-${blockIndex}`;
+    setPositions((prev) => ({
+      ...prev,
+      [key]: { x: startX + dx, y: startY + dy },
+    }));
+  };
+
+  const handleDragEnd = () => {
+    dragState.current = null;
+    window.removeEventListener("mousemove", handleDragMove);
+    window.removeEventListener("mouseup", handleDragEnd);
+  };
+
   const handleSave = async () => {
     if (!file) return;
     setSaving(true);
@@ -77,17 +128,26 @@ export default function EditPDF() {
       page.text_blocks.forEach((block, blockIdx) => {
         const key = `${pageIdx}-${blockIdx}`;
         const newText = edits[key];
-        if (newText !== undefined && newText !== block.text) {
+        const newPos = positions[key];
+        const textChanged = newText !== undefined && newText !== block.text;
+        const posChanged = newPos !== undefined;
+
+        if (textChanged || posChanged) {
+          const finalX = newPos ? newPos.x : block.x;
+          const finalY = newPos ? newPos.y : block.y;
+          const deltaX = finalX - block.x;
+          const deltaY = finalY - block.y;
+
           editsList.push({
             page: pageIdx + 1,
-            x: block.x,
-            y: block.y,
+            x: finalX,
+            y: finalY,
             width: block.width,
             height: block.height,
-            origin_x: block.origin_x,
-            origin_y: block.origin_y,
+            origin_x: block.origin_x + deltaX,
+            origin_y: block.origin_y + deltaY,
             old_text: block.text,
-            new_text: newText,
+            new_text: textChanged ? newText : block.text,
             font_size: block.font_size,
             color: block.color,
             font: block.font,
@@ -166,7 +226,10 @@ export default function EditPDF() {
     <div className="tool-container edit-pdf-container">
       <div className="edit-header">
         <h2>✏️ Edit PDF</h2>
-        <p className="tool-desc">Double-click any text to edit it.</p>
+        <p className="tool-desc">
+          Double-click any text to edit it. Drag the ⠿ handle on edited text to
+          reposition it.
+        </p>
       </div>
 
       <div className="edit-page-nav">
@@ -213,6 +276,17 @@ export default function EditPDF() {
           const isEditing = editingIndex === idx;
           const key = `${currentPage}-${idx}`;
           const isEdited = edits[key] !== undefined;
+          const pos = getPosition(idx, block);
+          const isBold = block.font.toLowerCase().includes("bold");
+          const displayText = getDisplayText(idx, block.text);
+
+          // Input box ki dynamic width — text length ke according
+          const estimatedWidth = estimateTextWidth(
+            displayText || " ",
+            block.font_size * scale,
+            isBold,
+          );
+          const inputWidth = Math.max(block.width * scale, estimatedWidth + 12);
 
           return isEditing ? (
             <input
@@ -220,13 +294,14 @@ export default function EditPDF() {
               autoFocus
               className="edit-text-input"
               style={{
-                left: block.x * scale,
-                top: block.y * scale,
-                width: Math.max(block.width * scale, 30),
+                left: pos.x * scale,
+                top: pos.y * scale,
+                width: inputWidth,
                 height: block.height * scale + 4,
                 fontSize: block.font_size * scale,
+                fontWeight: isBold ? "bold" : "normal",
               }}
-              value={getDisplayText(idx, block.text)}
+              value={displayText}
               onChange={(e) => handleTextChange(idx, e.target.value)}
               onBlur={() => setEditingIndex(null)}
               onKeyDown={(e) => {
@@ -238,29 +313,38 @@ export default function EditPDF() {
               key={idx}
               className={`edit-text-overlay ${isEdited ? "edited" : ""}`}
               style={{
-                left: block.x * scale,
-                top: block.y * scale,
-                width: block.width * scale,
+                left: pos.x * scale,
+                top: pos.y * scale,
+                width: isEdited
+                  ? Math.max(block.width * scale, estimatedWidth + 8)
+                  : block.width * scale,
                 height: block.height * scale,
               }}
               onDoubleClick={() => setEditingIndex(idx)}
               title="Double-click to edit"
             >
               {isEdited && (
-                <span
-                  className="edited-text-preview"
-                  style={{
-                    fontSize: block.font_size * scale,
-                    fontWeight: block.font.toLowerCase().includes("bold")
-                      ? "bold"
-                      : "normal",
-                    fontStyle: block.font.toLowerCase().includes("italic")
-                      ? "italic"
-                      : "normal",
-                  }}
-                >
-                  {getDisplayText(idx, block.text)}
-                </span>
+                <>
+                  <span
+                    className="edited-text-preview"
+                    style={{
+                      fontSize: block.font_size * scale,
+                      fontWeight: isBold ? "bold" : "normal",
+                      fontStyle: block.font.toLowerCase().includes("italic")
+                        ? "italic"
+                        : "normal",
+                    }}
+                  >
+                    {displayText}
+                  </span>
+                  <span
+                    className="drag-handle-icon"
+                    onMouseDown={(e) => handleDragStart(e, idx, block)}
+                    title="Drag to reposition"
+                  >
+                    ⠿
+                  </span>
+                </>
               )}
             </div>
           );
@@ -269,17 +353,33 @@ export default function EditPDF() {
 
       <div className="edit-actions">
         <button
-          className="reset-btn"
+          className="reset-btn pro-btn"
           onClick={() => {
             setFile(null);
             setPages([]);
             setEdits({});
+            setPositions({});
           }}
         >
-          🔄 Edit Another PDF
+          <span className="pro-btn-icon">🔄</span>
+          Edit Another PDF
         </button>
-        <button className="action-btn" onClick={handleSave} disabled={saving}>
-          {saving ? "Saving..." : "💾 Save & Download PDF"}
+        <button
+          className="action-btn pro-btn-primary"
+          onClick={handleSave}
+          disabled={saving}
+        >
+          {saving ? (
+            <>
+              <span className="btn-spinner"></span>
+              Saving...
+            </>
+          ) : (
+            <>
+              <span className="pro-btn-icon">💾</span>
+              Save & Download PDF
+            </>
+          )}
         </button>
       </div>
     </div>

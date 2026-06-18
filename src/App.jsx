@@ -8,6 +8,7 @@ import PageCounter from "./tools/PageCounter";
 import Logo from "./components/Logo";
 import UnlockPDF from "./tools/UnlockPDF";
 import EditPDF from "./tools/EditPDF";
+import RotatePDF from "./tools/RotatePDF";
 import "./App.css";
 
 const tools = [
@@ -96,8 +97,27 @@ const tools = [
     iconBg: "rgba(0, 180, 216, 0.1)",
     tag: "New",
   },
+  {
+    id: "rotate",
+    icon: "🔄",
+    name: "Rotate PDF",
+    desc: "Rotate individual pages or the whole document, 90° at a time.",
+    accent: "#9b59b6",
+    iconBg: "#f5edff",
+    tag: "New",
+  },
 ];
-
+const toolLayoutTools = [
+  "merge",
+  "compress",
+  "split",
+  "pdf2jpg",
+  "jpg2pdf",
+  "counter",
+  "unlock",
+  "editpdf",
+  "rotate",
+];
 export default function App() {
   const [activeTool, setActiveTool] = useState(null);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -105,21 +125,23 @@ export default function App() {
   const renderTool = () => {
     switch (activeTool) {
       case "merge":
-        return <MergePDF />;
+        return <MergePDF onBack={() => setActiveTool(null)} />;
       case "compress":
-        return <CompressPDF />;
+        return <CompressPDF onBack={() => setActiveTool(null)} />;
       case "split":
-        return <SplitPDF />;
+        return <SplitPDF onBack={() => setActiveTool(null)} />;
       case "pdf2jpg":
-        return <PDFtoJPG />;
+        return <PDFtoJPG onBack={() => setActiveTool(null)} />;
       case "jpg2pdf":
-        return <JPGtoPDF />;
+        return <JPGtoPDF onBack={() => setActiveTool(null)} />;
       case "counter":
-        return <PageCounter />;
+        return <PageCounter onBack={() => setActiveTool(null)} />;
       case "unlock":
-        return <UnlockPDF />;
+        return <UnlockPDF onBack={() => setActiveTool(null)} />;
       case "editpdf":
-        return <EditPDF />;
+        return <EditPDF onBack={() => setActiveTool(null)} />;
+      case "rotate":
+        return <RotatePDF onBack={() => setActiveTool(null)} />;
       default:
         return null;
     }
@@ -161,7 +183,6 @@ export default function App() {
       {/* Tools Grid */}{" "}
       {!activeTool ? (
         <main className="grid">
-          {" "}
           {tools.map((tool) => (
             <div
               key={tool.id}
@@ -169,27 +190,24 @@ export default function App() {
               style={{ "--accent": tool.accent, "--icon-bg": tool.iconBg }}
               onClick={() => setActiveTool(tool.id)}
             >
-              {" "}
               <div className="card-top">
-                {" "}
-                <div className="card-icon">{tool.icon}</div>{" "}
-                {tool.tag && <span className="tag">{tool.tag}</span>}{" "}
-              </div>{" "}
-              <h2>{tool.name}</h2> <p>{tool.desc}</p>{" "}
-              <span className="card-link">Use Tool →</span>{" "}
+                <div className="card-icon">{tool.icon}</div>
+                {tool.tag && <span className="tag">{tool.tag}</span>}
+              </div>
+              <h2>{tool.name}</h2>
+              <p>{tool.desc}</p>
+              <span className="card-link">Use Tool →</span>
             </div>
-          ))}{" "}
+          ))}
         </main>
-      ) : activeTool === "editpdf" ? (
-        <EditPDF />
+      ) : toolLayoutTools.includes(activeTool) ? (
+        renderTool()
       ) : (
         <main className="tool-page">
-          {" "}
           <button className="back-btn" onClick={() => setActiveTool(null)}>
-            {" "}
-            ← Back to All Tools{" "}
-          </button>{" "}
-          {renderTool()}{" "}
+            ← Back to All Tools
+          </button>
+          {renderTool()}
         </main>
       )}
       <footer>

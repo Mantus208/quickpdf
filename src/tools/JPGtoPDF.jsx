@@ -1,15 +1,20 @@
 import { useState } from "react";
 import { PDFDocument } from "pdf-lib";
+import ToolLayout from "../components/ToolLayout";
 
-export default function JPGtoPDF() {
+export default function JPGtoPDF({ onBack }) {
   const [files, setFiles] = useState([]);
   const [converting, setConverting] = useState(false);
   const [done, setDone] = useState(false);
 
   const handleFiles = (e) => {
     const selected = [...e.target.files];
-    setFiles(selected);
+    setFiles((prev) => [...prev, ...selected]);
     setDone(false);
+  };
+
+  const removeFile = (index) => {
+    setFiles((prev) => prev.filter((_, i) => i !== index));
   };
 
   const convertToPDF = async () => {
@@ -31,16 +36,14 @@ export default function JPGtoPDF() {
       } else if (mimeType === "image/png") {
         image = await pdfDoc.embedPng(arrayBuffer);
       } else {
-        continue; // skip unsupported
+        continue;
       }
 
       const { width, height } = image.scale(1);
 
-      // A4 size in points
       const a4Width = 595;
       const a4Height = 842;
 
-      // Scale image to fit A4
       const scaleX = a4Width / width;
       const scaleY = a4Height / height;
       const scale = Math.min(scaleX, scaleY, 1);
@@ -50,11 +53,15 @@ export default function JPGtoPDF() {
 
       const page = pdfDoc.addPage([a4Width, a4Height]);
 
-      // Center image on page
       const x = (a4Width - scaledWidth) / 2;
       const y = (a4Height - scaledHeight) / 2;
 
-      page.drawImage(image, { x, y, width: scaledWidth, height: scaledHeight });
+      page.drawImage(image, {
+        x,
+        y,
+        width: scaledWidth,
+        height: scaledHeight,
+      });
     }
 
     const pdfBytes = await pdfDoc.save();
@@ -69,18 +76,67 @@ export default function JPGtoPDF() {
     setDone(true);
   };
 
-  // Image preview
+  const reset = () => {
+    setFiles([]);
+    setDone(false);
+  };
+
   const getPreviewUrl = (file) => URL.createObjectURL(file);
 
   return (
-    <div className="tool-container">
-      <h2>📄 JPG to PDF</h2>
-      <p className="tool-desc">
-        Convert JPG, JPEG or PNG images to a PDF document. Multiple images =
-        multiple pages.
-      </p>
+    <ToolLayout
+      title="JPG to PDF"
+      icon="📄"
+      onBack={onBack}
+      actionBtn={
+        files.length > 0 && (
+          <>
+            {done && (
+              <button className="reset-btn" onClick={reset}>
+                🔄 Convert More Images
+              </button>
+            )}
+            <button
+              className="action-btn"
+              onClick={convertToPDF}
+              disabled={converting || files.length === 0}
+            >
+              {converting
+                ? "Converting..."
+                : `📄 Convert to PDF (${files.length})`}
+            </button>
+          </>
+        )
+      }
+      sidebar={
+        <>
+          {files.length > 0 ? (
+            <div className="sidebar-section">
+              <p className="sidebar-section-title">Images Selected</p>
+              <p className="range-hint">
+                {files.length} image{files.length > 1 ? "s" : ""} — each becomes
+                one PDF page
+              </p>
 
-      <div className="upload-box">
+              {done && (
+                <div
+                  className="sidebar-section"
+                  style={{ marginTop: "1.2rem" }}
+                >
+                  <p className="success-msg">✅ Converted! Download started.</p>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="tool-tip">
+              💡 Select JPG, JPEG or PNG images. Each image becomes one page in
+              the final PDF, fitted to A4 size.
+            </div>
+          )}
+        </>
+      }
+    >
+      <div className="tool-upload-area">
         <input
           type="file"
           accept="image/jpeg,image/jpg,image/png"
@@ -89,7 +145,7 @@ export default function JPGtoPDF() {
           id="jpg2pdf-input"
         />
         <label htmlFor="jpg2pdf-input" className="upload-label">
-          🖼️ Select Images
+          {files.length === 0 ? "🖼️ Select Images" : "➕ Add More Images"}
         </label>
         <p className="upload-hint">
           JPG, JPEG or PNG — multiple files supported
@@ -97,49 +153,22 @@ export default function JPGtoPDF() {
       </div>
 
       {files.length > 0 && (
-        <div className="file-list">
-          <p>
-            ✅ {files.length} image{files.length > 1 ? "s" : ""} selected:
-          </p>
-          <div className="image-preview-grid">
-            {files.map((file, i) => (
-              <div key={i} className="image-preview-item">
-                <img
-                  src={getPreviewUrl(file)}
-                  alt={file.name}
-                  className="image-thumb"
-                />
-                <p className="image-name">{file.name}</p>
-              </div>
-            ))}
-          </div>
+        <div className="page-thumb-grid">
+          {files.map((file, i) => (
+            <div key={i} className="page-thumb-card">
+              <button
+                className="page-thumb-remove"
+                onClick={() => removeFile(i)}
+                title="Remove this image"
+              >
+                ✕
+              </button>
+              <img src={getPreviewUrl(file)} alt={file.name} />
+              <span className="page-thumb-number">{i + 1}</span>
+            </div>
+          ))}
         </div>
       )}
-
-      <button
-        className="action-btn"
-        onClick={convertToPDF}
-        disabled={converting || files.length === 0}
-      >
-        {converting ? "Converting..." : "📄 Convert to PDF"}
-      </button>
-
-      {done && (
-        <>
-          <p className="success-msg">
-            ✅ Converted successfully! Download started.
-          </p>
-          <button
-            className="reset-btn"
-            onClick={() => {
-              setFiles([]);
-              setDone(false);
-            }}
-          >
-            🔄 Convert More Images
-          </button>
-        </>
-      )}
-    </div>
+    </ToolLayout>
   );
 }

@@ -1,15 +1,18 @@
 import { useState } from "react";
 import * as pdfjsLib from "pdfjs-dist";
 import JSZip from "jszip";
+import ToolLayout from "../components/ToolLayout";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
   "pdfjs-dist/build/pdf.worker.min.mjs",
   import.meta.url,
 ).toString();
 
-export default function PDFtoJPG() {
+export default function PDFtoJPG({ onBack }) {
   const [file, setFile] = useState(null);
   const [pageCount, setPageCount] = useState(0);
+  const [thumbnails, setThumbnails] = useState([]);
+  const [loadingThumbs, setLoadingThumbs] = useState(false);
   const [converting, setConverting] = useState(false);
   const [done, setDone] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -23,11 +26,28 @@ export default function PDFtoJPG() {
     setFile(selectedFile);
     setDone(false);
     setProgress(0);
+    setLoadingThumbs(true);
+    setThumbnails([]);
 
     const arrayBuffer = await selectedFile.arrayBuffer();
-    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer.slice(0) })
+      .promise;
     setPageCount(pdf.numPages);
     setToPage(pdf.numPages);
+
+    const thumbs = [];
+    for (let i = 1; i <= pdf.numPages; i++) {
+      const page = await pdf.getPage(i);
+      const viewport = page.getViewport({ scale: 0.4 });
+      const canvas = document.createElement("canvas");
+      canvas.width = viewport.width;
+      canvas.height = viewport.height;
+      const ctx = canvas.getContext("2d");
+      await page.render({ canvasContext: ctx, viewport }).promise;
+      thumbs.push(canvas.toDataURL("image/jpeg", 0.7));
+    }
+    setThumbnails(thumbs);
+    setLoadingThumbs(false);
   };
 
   const convertToJPG = async () => {
@@ -76,15 +96,129 @@ export default function PDFtoJPG() {
     setDone(true);
   };
 
-  return (
-    <div className="tool-container">
-      <h2>🖼️ PDF to JPG</h2>
-      <p className="tool-desc">
-        Convert PDF pages to high quality JPG images. All images downloaded as
-        ZIP.
-      </p>
+  const reset = () => {
+    setFile(null);
+    setDone(false);
+    setPageCount(0);
+    setProgress(0);
+    setThumbnails([]);
+  };
 
-      <div className="upload-box">
+  return (
+    <ToolLayout
+      title="PDF to JPG"
+      icon="🖼️"
+      onBack={onBack}
+      actionBtn={
+        file && (
+          <>
+            {done && (
+              <button className="reset-btn" onClick={reset}>
+                🔄 Convert Another PDF
+              </button>
+            )}
+            <button
+              className="action-btn"
+              onClick={convertToJPG}
+              disabled={converting || !file}
+            >
+              {converting ? `Converting ${progress}%...` : "🖼️ Convert to JPG"}
+            </button>
+          </>
+        )
+      }
+      sidebar={
+        <>
+          {file && (
+            <>
+              <div className="sidebar-section">
+                <p className="sidebar-section-title">Convert Options</p>
+                <div className="option-row">
+                  <label
+                    className={`option-card ${
+                      convertType === "all" ? "active" : ""
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="convertType"
+                      value="all"
+                      checked={convertType === "all"}
+                      onChange={() => setConvertType("all")}
+                    />
+                    <span className="option-icon">🖼️</span>
+                    <span className="option-title">All Pages</span>
+                    <small>Convert all pages to JPG</small>
+                  </label>
+                  <label
+                    className={`option-card ${
+                      convertType === "range" ? "active" : ""
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="convertType"
+                      value="range"
+                      checked={convertType === "range"}
+                      onChange={() => setConvertType("range")}
+                    />
+                    <span className="option-icon">📑</span>
+                    <span className="option-title">Custom Range</span>
+                    <small>Convert specific pages only</small>
+                  </label>
+                </div>
+              </div>
+
+              {convertType === "range" && (
+                <div className="sidebar-section">
+                  <p className="sidebar-section-title">Page Range</p>
+                  <div className="range-inputs">
+                    <div className="range-field">
+                      <label>From</label>
+                      <input
+                        type="number"
+                        min={1}
+                        max={pageCount}
+                        value={fromPage}
+                        onChange={(e) => setFromPage(Number(e.target.value))}
+                      />
+                    </div>
+                    <span className="range-dash">—</span>
+                    <div className="range-field">
+                      <label>To</label>
+                      <input
+                        type="number"
+                        min={1}
+                        max={pageCount}
+                        value={toPage}
+                        onChange={(e) => setToPage(Number(e.target.value))}
+                      />
+                    </div>
+                  </div>
+                  <p className="range-hint">Total pages: {pageCount}</p>
+                </div>
+              )}
+
+              {done && (
+                <div className="sidebar-section">
+                  <p className="success-msg">
+                    ✅ Converted! ZIP download started.
+                  </p>
+                </div>
+              )}
+            </>
+          )}
+
+          {!file && (
+            <div className="tool-tip">
+              💡 Select a PDF to convert its pages into high quality JPG images,
+              downloaded as a ZIP file.
+            </div>
+          )}
+        </>
+      }
+    >
+      <div className="tool-upload-area">
         <input
           type="file"
           accept=".pdf"
@@ -98,77 +232,44 @@ export default function PDFtoJPG() {
       </div>
 
       {file && (
-        <div className="file-list">
-          <p>✅ File selected:</p>
-          <div className="file-item">
+        <div className="tool-file-list">
+          <div className="tool-file-item">
             📄 {file.name} — {pageCount} pages
           </div>
         </div>
       )}
 
-      {file && (
-        <div className="split-options">
-          <p className="options-label">Convert Options:</p>
-          <div className="option-row">
-            <label
-              className={`option-card ${convertType === "all" ? "active" : ""}`}
-            >
-              <input
-                type="radio"
-                name="convertType"
-                value="all"
-                checked={convertType === "all"}
-                onChange={() => setConvertType("all")}
-              />
-              <span>🖼️ All Pages</span>
-              <small>Convert all pages to JPG</small>
-            </label>
-            <label
-              className={`option-card ${convertType === "range" ? "active" : ""}`}
-            >
-              <input
-                type="radio"
-                name="convertType"
-                value="range"
-                checked={convertType === "range"}
-                onChange={() => setConvertType("range")}
-              />
-              <span>📑 Custom Range</span>
-              <small>Convert specific pages only</small>
-            </label>
+      {loadingThumbs && (
+        <div className="progress-box">
+          <div className="progress-bar">
+            <div className="progress-fill" style={{ width: "70%" }}></div>
           </div>
+          <p className="progress-text">Generating page previews...</p>
+        </div>
+      )}
 
-          {convertType === "range" && (
-            <div className="range-inputs">
-              <div className="range-field">
-                <label>From Page</label>
-                <input
-                  type="number"
-                  min={1}
-                  max={pageCount}
-                  value={fromPage}
-                  onChange={(e) => setFromPage(Number(e.target.value))}
-                />
+      {thumbnails.length > 0 && (
+        <div className="page-thumb-grid">
+          {thumbnails.map((thumb, idx) => {
+            const pageNum = idx + 1;
+            const inRange =
+              convertType === "all" ||
+              (pageNum >= fromPage && pageNum <= toPage);
+            return (
+              <div
+                key={idx}
+                className={`page-thumb-card ${!inRange ? "excluded" : ""}`}
+              >
+                <img src={thumb} alt={`Page ${pageNum}`} />
+                <span className="page-thumb-number">{pageNum}</span>
               </div>
-              <span className="range-dash">—</span>
-              <div className="range-field">
-                <label>To Page</label>
-                <input
-                  type="number"
-                  min={1}
-                  max={pageCount}
-                  value={toPage}
-                  onChange={(e) => setToPage(Number(e.target.value))}
-                />
-              </div>
-              <p className="range-hint">Total pages: {pageCount}</p>
-            </div>
-          )}
+            );
+          })}
         </div>
       )}
 
       {converting && (
-        <div className="progress-box">
+        <div className="progress-box" style={{ marginTop: "1.5rem" }}>
           <div className="progress-bar">
             <div
               className="progress-fill"
@@ -178,33 +279,6 @@ export default function PDFtoJPG() {
           <p className="progress-text">Converting... {progress}%</p>
         </div>
       )}
-
-      <button
-        className="action-btn"
-        onClick={convertToJPG}
-        disabled={converting || !file}
-      >
-        {converting ? `Converting ${progress}%...` : "🖼️ Convert to JPG"}
-      </button>
-
-      {done && (
-        <>
-          <p className="success-msg">
-            ✅ Converted successfully! ZIP download started.
-          </p>
-          <button
-            className="reset-btn"
-            onClick={() => {
-              setFile(null);
-              setDone(false);
-              setPageCount(0);
-              setProgress(0);
-            }}
-          >
-            🔄 Convert Another PDF
-          </button>
-        </>
-      )}
-    </div>
+    </ToolLayout>
   );
 }

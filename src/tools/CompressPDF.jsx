@@ -1,31 +1,40 @@
 import { useState } from "react";
 import { PDFDocument } from "pdf-lib";
 import * as pdfjsLib from "pdfjs-dist";
+import ToolLayout from "../components/ToolLayout";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
   "pdfjs-dist/build/pdf.worker.min.mjs",
   import.meta.url,
 ).toString();
 
-export default function CompressPDF() {
+export default function CompressPDF({ onBack }) {
+  const [previewUrl, setPreviewUrl] = useState(null);
   const [file, setFile] = useState(null);
   const [quality, setQuality] = useState("medium");
   const [compressing, setCompressing] = useState(false);
   const [done, setDone] = useState(false);
   const [stats, setStats] = useState(null);
   const [progress, setProgress] = useState(0);
+  const handleFile = (e) => {
+    const selected = e.target.files[0];
+
+    if (!selected) return;
+
+    setFile(selected);
+
+    const url = URL.createObjectURL(selected);
+
+    setPreviewUrl(url);
+    setDone(false);
+    setStats(null);
+    setProgress(0);
+  };
 
   const qualitySettings = {
     low: { scale: 0.8, imgQuality: 0.4, label: "Max Compress" },
     medium: { scale: 1.2, imgQuality: 0.6, label: "Balanced" },
     high: { scale: 1.5, imgQuality: 0.85, label: "High Quality" },
-  };
-
-  const handleFile = (e) => {
-    setFile(e.target.files[0]);
-    setDone(false);
-    setStats(null);
-    setProgress(0);
   };
 
   const compressPDF = async () => {
@@ -119,128 +128,155 @@ export default function CompressPDF() {
   };
 
   return (
-    <div className="tool-container">
-      <h2>📦 Compress PDF</h2>
-      <p className="tool-desc">
-        Reduce PDF file size significantly while maintaining quality.
-      </p>
+    <ToolLayout
+      title="Compress PDF"
+      icon="📦"
+      onBack={onBack}
+      actionBtn={
+        file && (
+          <>
+            {done && (
+              <button
+                className="reset-btn"
+                onClick={() => {
+                  setFile(null);
+                  setDone(false);
+                  setStats(null);
+                  setProgress(0);
+                }}
+              >
+                🔄 Compress Another PDF
+              </button>
+            )}
 
-      <div className="upload-box">
+            <button
+              className="action-btn"
+              onClick={compressPDF}
+              disabled={compressing}
+            >
+              {compressing ? `Compressing ${progress}%...` : "📦 Compress PDF"}
+            </button>
+          </>
+        )
+      }
+      sidebar={
+        <>
+          {file && (
+            <>
+              <div className="sidebar-section">
+                <p className="sidebar-section-title">Compression Level</p>
+
+                <div className="option-row">
+                  {Object.entries(qualitySettings).map(([key, val]) => (
+                    <label
+                      key={key}
+                      className={`option-card ${
+                        quality === key ? "active" : ""
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        checked={quality === key}
+                        onChange={() => setQuality(key)}
+                      />
+
+                      <span className="option-icon">
+                        {key === "low" ? "🗜️" : key === "medium" ? "⚖️" : "✨"}
+                      </span>
+
+                      <span className="option-title">{val.label}</span>
+
+                      <small>
+                        {key === "low"
+                          ? "Maximum Size Reduction"
+                          : key === "medium"
+                            ? "Balanced Compression"
+                            : "Best Quality"}
+                      </small>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {stats && (
+                <div className="sidebar-section">
+                  <p className="sidebar-section-title">Compression Result</p>
+
+                  <div className="stats-box">
+                    <div className="stat-row">
+                      <span>Original</span>
+                      <strong>{stats.original} KB</strong>
+                    </div>
+
+                    <div className="stat-row">
+                      <span>Compressed</span>
+                      <strong>{stats.compressed} KB</strong>
+                    </div>
+
+                    <div className="stat-row">
+                      <span>Saved</span>
+                      <strong>{stats.saved}%</strong>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+
+          {!file && (
+            <div className="tool-tip">
+              💡 Upload a PDF and choose compression level.
+            </div>
+          )}
+        </>
+      }
+    >
+      <div className="tool-upload-area">
         <input
           type="file"
           accept=".pdf"
           onChange={handleFile}
           id="compress-input"
         />
+
         <label htmlFor="compress-input" className="upload-label">
           📂 Select PDF File
         </label>
+
         <p className="upload-hint">Select one PDF file to compress</p>
       </div>
+      {previewUrl && (
+        <>
+          <h3 className="preview-title">PDF Preview</h3>
 
+          <div className="pdf-preview-card">
+            <iframe src={previewUrl} title="PDF Preview" />
+          </div>
+        </>
+      )}
       {file && (
-        <div className="file-list">
-          <p>✅ File selected:</p>
-          <div className="file-item">
-            📄 {file.name} — {(file.size / 1024).toFixed(1)} KB
+        <div className="tool-file-list">
+          <div className="tool-file-item">
+            📄 {file.name}
+            {" — "}
+            {(file.size / 1024).toFixed(1)} KB
           </div>
         </div>
       )}
-
-      {/* Quality Options */}
-      {file && (
-        <div className="split-options">
-          <p className="options-label">Compression Level:</p>
-          <div
-            className="option-row"
-            style={{ gridTemplateColumns: "1fr 1fr 1fr" }}
-          >
-            {Object.entries(qualitySettings).map(([key, val]) => (
-              <label
-                key={key}
-                className={`option-card ${quality === key ? "active" : ""}`}
-              >
-                <input
-                  type="radio"
-                  name="quality"
-                  value={key}
-                  checked={quality === key}
-                  onChange={() => setQuality(key)}
-                />
-                <span>
-                  {key === "low" ? "🗜️" : key === "medium" ? "⚖️" : "✨"}{" "}
-                  {val.label}
-                </span>
-                <small>
-                  {key === "low"
-                    ? "Image PDFs — max size reduction"
-                    : key === "medium"
-                      ? "Image PDFs — balanced quality"
-                      : "All PDFs — lossless compression"}
-                </small>
-              </label>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Progress */}
       {compressing && (
         <div className="progress-box">
           <div className="progress-bar">
             <div
               className="progress-fill"
-              style={{ width: `${progress}%` }}
-            ></div>
+              style={{
+                width: `${progress}%`,
+              }}
+            />
           </div>
+
           <p className="progress-text">Compressing... {progress}%</p>
         </div>
       )}
-
-      {/* Stats */}
-      {stats && (
-        <div className="stats-box">
-          <div className="stat">
-            <span className="stat-label">Original</span>
-            <span className="stat-value">{stats.original} KB</span>
-          </div>
-          <div className="stat">
-            <span className="stat-label">Compressed</span>
-            <span className="stat-value">{stats.compressed} KB</span>
-          </div>
-          <div className="stat">
-            <span className="stat-label">Saved</span>
-            <span className="stat-value saved">{stats.saved}%</span>
-          </div>
-        </div>
-      )}
-
-      <button
-        className="action-btn"
-        onClick={compressPDF}
-        disabled={compressing || !file}
-      >
-        {compressing ? `Compressing ${progress}%...` : "📦 Compress PDF"}
-      </button>
-
-      {done && (
-        <>
-          <p className="success-msg">
-            ✅ PDF compressed successfully! Download started.
-          </p>
-          <button
-            className="reset-btn"
-            onClick={() => {
-              setFile(null);
-              setDone(false);
-              setStats(null);
-              setProgress(0);
-            }}
-          >
-            🔄 Compress Another PDF
-          </button>
-        </>
-      )}
-    </div>
+    </ToolLayout>
   );
 }

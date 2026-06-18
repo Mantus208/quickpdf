@@ -1,14 +1,18 @@
 import { useState } from "react";
 import { PDFDocument } from "pdf-lib";
 import * as pdfjsLib from "pdfjs-dist";
+import ToolLayout from "../components/ToolLayout";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
   "pdfjs-dist/build/pdf.worker.min.mjs",
   import.meta.url,
 ).toString();
 
-export default function UnlockPDF() {
+export default function UnlockPDF({ onBack }) {
   const [file, setFile] = useState(null);
+  const [thumbnail, setThumbnail] = useState(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [debounceTimer, setDebounceTimer] = useState(null);
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [unlocking, setUnlocking] = useState(false);
@@ -16,6 +20,25 @@ export default function UnlockPDF() {
   const [error, setError] = useState("");
   const [pdfInfo, setPdfInfo] = useState(null);
   const [progress, setProgress] = useState(0);
+
+  const generateThumbnail = async (arrayBuffer, pass = "") => {
+    try {
+      const pdfDoc = await pdfjsLib.getDocument({
+        data: arrayBuffer.slice(0),
+        password: pass,
+      }).promise;
+      const page = await pdfDoc.getPage(1);
+      const viewport = page.getViewport({ scale: 0.6 });
+      const canvas = document.createElement("canvas");
+      canvas.width = viewport.width;
+      canvas.height = viewport.height;
+      const ctx = canvas.getContext("2d");
+      await page.render({ canvasContext: ctx, viewport }).promise;
+      return canvas.toDataURL("image/jpeg", 0.8);
+    } catch {
+      return null;
+    }
+  };
 
   const handleFile = async (e) => {
     const selectedFile = e.target.files[0];
@@ -26,12 +49,13 @@ export default function UnlockPDF() {
     setPdfInfo(null);
     setProgress(0);
     setPassword("");
+    setThumbnail(null);
 
     try {
       const arrayBuffer = await selectedFile.arrayBuffer();
       try {
         const pdfDoc = await pdfjsLib.getDocument({
-          data: arrayBuffer,
+          data: arrayBuffer.slice(0),
         }).promise;
         const meta = await pdfDoc.getMetadata().catch(() => ({}));
         setPdfInfo({
@@ -41,6 +65,9 @@ export default function UnlockPDF() {
           size: (selectedFile.size / 1024).toFixed(1),
           isPasswordProtected: false,
         });
+
+        const thumb = await generateThumbnail(arrayBuffer);
+        setThumbnail(thumb);
       } catch (err) {
         if (err?.name === "PasswordException") {
           setPdfInfo({
@@ -57,6 +84,33 @@ export default function UnlockPDF() {
     } catch {
       setError("❌ Could not read this file.");
     }
+  };
+
+  const tryPreviewWithPassword = async (pass) => {
+    if (!file || !pass) return;
+    setPreviewLoading(true);
+    try {
+      const arrayBuffer = await file.arrayBuffer();
+      const thumb = await generateThumbnail(arrayBuffer, pass);
+      if (thumb) {
+        setThumbnail(thumb);
+      }
+    } catch {
+      // silent — wrong password, unlock click par error dikhayenge
+    }
+    setPreviewLoading(false);
+  };
+
+  const handlePasswordChange = (e) => {
+    const value = e.target.value;
+    setPassword(value);
+    setError("");
+
+    if (debounceTimer) clearTimeout(debounceTimer);
+    const timer = setTimeout(() => {
+      if (value.length > 0) tryPreviewWithPassword(value);
+    }, 600);
+    setDebounceTimer(timer);
   };
 
   const unlockPDF = async () => {
@@ -84,7 +138,6 @@ export default function UnlockPDF() {
         throw err;
       }
 
-      // Password sahi tha — ab info update karo
       const meta = await pdfDoc.getMetadata().catch(() => ({}));
       setPdfInfo((prev) => ({
         ...prev,
@@ -93,7 +146,11 @@ export default function UnlockPDF() {
         author: meta?.info?.Author || "—",
       }));
 
-      // Canvas pe render karke naya PDF banao
+      if (!thumbnail) {
+        const thumb = await generateThumbnail(arrayBuffer, password);
+        setThumbnail(thumb);
+      }
+
       const newPdf = await PDFDocument.create();
       const totalPages = pdfDoc.numPages;
 
@@ -137,15 +194,134 @@ export default function UnlockPDF() {
     setUnlocking(false);
   };
 
-  return (
-    <div className="tool-container">
-      <h2>🔓 Unlock PDF</h2>
-      <p className="tool-desc">
-        Remove PDF restrictions and password protection — instantly and for
-        free.
-      </p>
+  const reset = () => {
+    setFile(null);
+    setDone(false);
+    setPdfInfo(null);
+    setPassword("");
+    setProgress(0);
+    setThumbnail(null);
+    setError("");
+  };
 
-      <div className="upload-box">
+  return (
+    <ToolLayout
+      title="Unlock PDF"
+      icon="🔓"
+      onBack={onBack}
+      actionBtn={
+        file &&
+        pdfInfo && (
+          <>
+            {done && (
+              <button className="reset-btn" onClick={reset}>
+                🔄 Unlock Another PDF
+              </button>
+            )}
+            <button
+              className="action-btn"
+              onClick={unlockPDF}
+              disabled={unlocking || (pdfInfo.isPasswordProtected && !password)}
+            >
+              {unlocking ? `Unlocking ${progress}%...` : "🔓 Unlock PDF"}
+            </button>
+          </>
+        )
+      }
+      sidebar={
+        <>
+          {pdfInfo && (
+            <div className="sidebar-section">
+              <p className="sidebar-section-title">PDF Details</p>
+              <div className="pdf-info-card" style={{ margin: 0 }}>
+                <div className="info-grid">
+                  <div className="info-item">
+                    <span className="info-label">Pages</span>
+                    <span className="info-value">{pdfInfo.pages}</span>
+                  </div>
+                  <div className="info-item">
+                    <span className="info-label">File Size</span>
+                    <span className="info-value">{pdfInfo.size} KB</span>
+                  </div>
+                  <div className="info-item">
+                    <span className="info-label">Title</span>
+                    <span className="info-value">{pdfInfo.title}</span>
+                  </div>
+                  <div className="info-item">
+                    <span className="info-label">Author</span>
+                    <span className="info-value">{pdfInfo.author}</span>
+                  </div>
+                </div>
+
+                {pdfInfo.isPasswordProtected ? (
+                  <div className="info-notice warning-notice">
+                    🔒 Password protected — Enter password to unlock.
+                  </div>
+                ) : (
+                  <div className="info-notice success-notice">
+                    ✅ No password needed — Click unlock to remove restrictions.
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {pdfInfo?.isPasswordProtected && (
+            <div className="sidebar-section">
+              <p className="sidebar-section-title">PDF Password</p>
+              <div className="password-box" style={{ margin: 0 }}>
+                <div className="password-input-wrap">
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    className="password-input"
+                    placeholder="Enter password..."
+                    value={password}
+                    onChange={handlePasswordChange}
+                  />
+                  <button
+                    className="eye-btn"
+                    onClick={() => setShowPassword(!showPassword)}
+                    type="button"
+                  >
+                    {showPassword ? "🙈" : "👁️"}
+                  </button>
+                </div>
+                <small className="password-hint">
+                  {previewLoading
+                    ? "Checking password..."
+                    : thumbnail
+                      ? "✅ Password correct — preview loaded"
+                      : "Correct password required to unlock this PDF"}
+                </small>
+              </div>
+            </div>
+          )}
+
+          {error && (
+            <div className="sidebar-section">
+              <p className="error-msg">{error}</p>
+            </div>
+          )}
+
+          {done && (
+            <div className="sidebar-section">
+              <p className="success-msg">
+                ✅ PDF unlocked! All restrictions removed.
+              </p>
+            </div>
+          )}
+
+          {!file && (
+            <div className="tool-tip">
+              💡 Select a restricted or password-protected PDF. This tool
+              removes print/copy/edit locks and password protection, then gives
+              you a clean, fully usable PDF.
+            </div>
+          )}
+        </>
+      }
+    >
+      <div className="tool-upload-area">
         <input
           type="file"
           accept=".pdf"
@@ -160,71 +336,55 @@ export default function UnlockPDF() {
         </p>
       </div>
 
-      {pdfInfo && (
-        <div className="pdf-info-card">
-          <p className="info-title">📋 PDF Details</p>
-          <div className="info-grid">
-            <div className="info-item">
-              <span className="info-label">Pages</span>
-              <span className="info-value">{pdfInfo.pages}</span>
-            </div>
-            <div className="info-item">
-              <span className="info-label">File Size</span>
-              <span className="info-value">{pdfInfo.size} KB</span>
-            </div>
-            <div className="info-item">
-              <span className="info-label">Title</span>
-              <span className="info-value">{pdfInfo.title}</span>
-            </div>
-            <div className="info-item">
-              <span className="info-label">Author</span>
-              <span className="info-value">{pdfInfo.author}</span>
-            </div>
+      {file && (
+        <div className="tool-file-list">
+          <div className="tool-file-item">
+            📄 {file.name} — {pdfInfo?.size} KB
           </div>
-
-          {pdfInfo.isPasswordProtected ? (
-            <div className="info-notice warning-notice">
-              🔒 Password protected — Enter password below to unlock.
-            </div>
-          ) : (
-            <div className="info-notice success-notice">
-              ✅ No password needed — Click unlock to remove restrictions.
-            </div>
-          )}
         </div>
       )}
 
-      {/* Password field — sirf password protected PDF ke liye */}
-      {pdfInfo?.isPasswordProtected && (
-        <div className="password-box">
-          <label className="password-label">🔑 Enter PDF Password</label>
-          <div className="password-input-wrap">
-            <input
-              type={showPassword ? "text" : "password"}
-              className="password-input"
-              placeholder="Enter password..."
-              value={password}
-              onChange={(e) => {
-                setPassword(e.target.value);
-                setError("");
-              }}
-            />
-            <button
-              className="eye-btn"
-              onClick={() => setShowPassword(!showPassword)}
-              type="button"
-            >
-              {showPassword ? "🙈" : "👁️"}
-            </button>
+      {file && (
+        <div className="page-thumb-grid" style={{ marginTop: "1.5rem" }}>
+          <div className="page-thumb-card">
+            {thumbnail ? (
+              <img src={thumbnail} alt="PDF preview" />
+            ) : previewLoading ? (
+              <div
+                style={{
+                  height: "160px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  background: "#f8f7ff",
+                  fontSize: "1.5rem",
+                }}
+              >
+                ⏳
+              </div>
+            ) : (
+              <div
+                style={{
+                  height: "160px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  background: "#f8f7ff",
+                  fontSize: "2.5rem",
+                }}
+              >
+                🔒
+              </div>
+            )}
+            <span className="page-thumb-number">
+              {thumbnail ? "Page 1 preview" : "Locked — enter password"}
+            </span>
           </div>
-          <small className="password-hint">
-            Correct password required to unlock this PDF
-          </small>
         </div>
       )}
 
       {unlocking && (
-        <div className="progress-box">
+        <div className="progress-box" style={{ marginTop: "1.5rem" }}>
           <div className="progress-bar">
             <div
               className="progress-fill"
@@ -234,38 +394,6 @@ export default function UnlockPDF() {
           <p className="progress-text">Unlocking... {progress}%</p>
         </div>
       )}
-
-      {error && <p className="error-msg">{error}</p>}
-
-      {file && pdfInfo && (
-        <button
-          className="action-btn"
-          onClick={unlockPDF}
-          disabled={unlocking || (pdfInfo.isPasswordProtected && !password)}
-        >
-          {unlocking ? `Unlocking ${progress}%...` : "🔓 Unlock PDF"}
-        </button>
-      )}
-
-      {done && (
-        <>
-          <p className="success-msg">
-            ✅ PDF unlocked! All restrictions removed.
-          </p>
-          <button
-            className="reset-btn"
-            onClick={() => {
-              setFile(null);
-              setDone(false);
-              setPdfInfo(null);
-              setPassword("");
-              setProgress(0);
-            }}
-          >
-            🔄 Unlock Another PDF
-          </button>
-        </>
-      )}
-    </div>
+    </ToolLayout>
   );
 }

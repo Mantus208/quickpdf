@@ -2,15 +2,15 @@ import { useState } from "react";
 import { PDFDocument } from "pdf-lib";
 import * as pdfjsLib from "pdfjs-dist";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
+import ToolLayout from "../components/ToolLayout";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
   "pdfjs-dist/build/pdf.worker.min.mjs",
   import.meta.url,
 ).toString();
 
-export default function MergePDF() {
+export default function MergePDF({ onBack }) {
   const [files, setFiles] = useState([]);
-  // const [previews, setPreviews] = useState([]);
   const [merging, setMerging] = useState(false);
   const [done, setDone] = useState(false);
 
@@ -41,7 +41,6 @@ export default function MergePDF() {
       pageCount: 0,
     }));
 
-    // Get page counts
     for (const item of newItems) {
       const ab = await item.file.arrayBuffer();
       const pdf = await PDFDocument.load(ab);
@@ -49,7 +48,6 @@ export default function MergePDF() {
     }
 
     setFiles((prev) => [...prev, ...newItems]);
-    // setPreviews((prev) => [...prev, ...newPreviews]);
   };
 
   const handleDragEnd = (result) => {
@@ -91,14 +89,69 @@ export default function MergePDF() {
     setDone(true);
   };
 
-  return (
-    <div className="tool-container">
-      <h2>🔗 Merge PDF</h2>
-      <p className="tool-desc">
-        Combine multiple PDF files into one. Drag to reorder before merging.
-      </p>
+  const reset = () => {
+    setFiles([]);
+    setDone(false);
+  };
 
-      <div className="upload-box">
+  return (
+    <ToolLayout
+      title="Merge PDF"
+      icon="🔗"
+      onBack={onBack}
+      actionBtn={
+        files.length > 0 && (
+          <>
+            {done && (
+              <button className="reset-btn" onClick={reset}>
+                🔄 Merge Another PDF
+              </button>
+            )}
+            <button
+              className="action-btn"
+              onClick={mergePDFs}
+              disabled={merging || files.length < 2}
+            >
+              {merging ? "Merging..." : `🔗 Merge PDF (${files.length} files)`}
+            </button>
+          </>
+        )
+      }
+      sidebar={
+        <>
+          {files.length > 0 ? (
+            <div className="sidebar-section">
+              <p className="sidebar-section-title">Files Selected</p>
+              <p className="range-hint">
+                {files.length} file{files.length > 1 ? "s" : ""} added
+              </p>
+              {files.length < 2 && (
+                <p
+                  className="range-hint"
+                  style={{ color: "#e74c3c", marginTop: "0.5rem" }}
+                >
+                  ⚠️ Add at least 2 files to merge
+                </p>
+              )}
+
+              <div className="sidebar-section" style={{ marginTop: "1.2rem" }}>
+                <p className="sidebar-section-title">Total Pages</p>
+                <p className="range-hint">
+                  {files.reduce((sum, f) => sum + f.pageCount, 0)} pages
+                  combined
+                </p>
+              </div>
+            </div>
+          ) : (
+            <div className="tool-tip">
+              💡 Select 2 or more PDF files. Drag items in the list to reorder
+              them before merging.
+            </div>
+          )}
+        </>
+      }
+    >
+      <div className="tool-upload-area">
         <input
           type="file"
           accept=".pdf"
@@ -141,6 +194,9 @@ export default function MergePDF() {
                         >
                           <div className="merge-preview-thumb">
                             <img src={item.preview} alt={item.file.name} />
+                            <span className="merge-order-badge">
+                              {index + 1}
+                            </span>
                             <span className="merge-page-badge">
                               {item.pageCount}p
                             </span>
@@ -172,31 +228,6 @@ export default function MergePDF() {
           </DragDropContext>
         </>
       )}
-
-      <button
-        className="action-btn"
-        onClick={mergePDFs}
-        disabled={merging || files.length < 2}
-      >
-        {merging ? "Merging..." : "🔗 Merge PDF"}
-      </button>
-
-      {done && (
-        <>
-          <p className="success-msg">
-            ✅ PDF merged successfully! Download started.
-          </p>
-          <button
-            className="reset-btn"
-            onClick={() => {
-              setFiles([]);
-              setDone(false);
-            }}
-          >
-            🔄 Merge Another PDF
-          </button>
-        </>
-      )}
-    </div>
+    </ToolLayout>
   );
 }

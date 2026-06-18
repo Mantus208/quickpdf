@@ -1,27 +1,63 @@
 import { useState } from "react";
 import { PDFDocument } from "pdf-lib";
+import * as pdfjsLib from "pdfjs-dist";
 import ExcelJS from "exceljs";
+import ToolLayout from "../components/ToolLayout";
 
-export default function PageCounter() {
+pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
+  "pdfjs-dist/build/pdf.worker.min.mjs",
+  import.meta.url,
+).toString();
+
+export default function PageCounter({ onBack }) {
   const [files, setFiles] = useState([]);
   const [folderFiles, setFolderFiles] = useState([]);
   const [mode, setMode] = useState("files");
+  const [thumbnails, setThumbnails] = useState([]);
+  const [loadingThumbs, setLoadingThumbs] = useState(false);
   const [results, setResults] = useState([]);
   const [processing, setProcessing] = useState(false);
   const [done, setDone] = useState(false);
 
-  const handleFiles = (e) => {
+  const generateThumbnail = async (file) => {
+    try {
+      const arrayBuffer = await file.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer.slice(0) })
+        .promise;
+      const page = await pdf.getPage(1);
+      const viewport = page.getViewport({ scale: 0.4 });
+      const canvas = document.createElement("canvas");
+      canvas.width = viewport.width;
+      canvas.height = viewport.height;
+      const ctx = canvas.getContext("2d");
+      await page.render({ canvasContext: ctx, viewport }).promise;
+      return canvas.toDataURL("image/jpeg", 0.7);
+    } catch {
+      return null;
+    }
+  };
+
+  const loadThumbnails = async (selectedFiles) => {
+    setLoadingThumbs(true);
+    const thumbs = await Promise.all(selectedFiles.map(generateThumbnail));
+    setThumbnails(thumbs);
+    setLoadingThumbs(false);
+  };
+
+  const handleFiles = async (e) => {
     const selected = [...e.target.files].filter((f) => f.name.endsWith(".pdf"));
     setFiles(selected);
     setResults([]);
     setDone(false);
+    await loadThumbnails(selected);
   };
 
-  const handleFolder = (e) => {
+  const handleFolder = async (e) => {
     const selected = [...e.target.files].filter((f) => f.name.endsWith(".pdf"));
     setFolderFiles(selected);
     setResults([]);
     setDone(false);
+    await loadThumbnails(selected);
   };
 
   const processFiles = async () => {
@@ -58,14 +94,12 @@ export default function PageCounter() {
 
     setResults(data);
 
-    // Single file — sirf screen pe dikhao
     if (data.length === 1) {
       setProcessing(false);
       setDone(true);
       return;
     }
 
-    // Multiple files — Excel export
     const workbook = new ExcelJS.Workbook();
     const sheet = workbook.addWorksheet("PDF Page Count");
 
@@ -78,7 +112,6 @@ export default function PageCounter() {
       { header: "File Size (KB)", key: "size", width: 18 },
     ];
 
-    // Header row purple styling
     sheet.getRow(1).eachCell((cell) => {
       cell.font = { bold: true, color: { argb: "FFFFFFFF" } };
       cell.fill = {
@@ -88,7 +121,6 @@ export default function PageCounter() {
       };
     });
 
-    // Data rows
     data.forEach((r) => {
       const row = {
         name: r["File Name"],
@@ -99,7 +131,6 @@ export default function PageCounter() {
       sheet.addRow(row);
     });
 
-    // Download
     const buffer = await workbook.xlsx.writeBuffer();
     const blob = new Blob([buffer], {
       type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -114,55 +145,119 @@ export default function PageCounter() {
     setDone(true);
   };
 
+  const reset = () => {
+    setFiles([]);
+    setFolderFiles([]);
+    setResults([]);
+    setThumbnails([]);
+    setDone(false);
+  };
+
   const totalPages = results.reduce((sum, r) => {
     return typeof r["Page Count"] === "number" ? sum + r["Page Count"] : sum;
   }, 0);
 
+  const targetCount = mode === "files" ? files.length : folderFiles.length;
+  const activeFiles = mode === "files" ? files : folderFiles;
+
   return (
-    <div className="tool-container">
-      <h2>🔢 PDF Page Counter</h2>
-      <p className="tool-desc">
-        Count pages in PDF files. Single file shows result on screen. Multiple
-        files export to Excel.
-      </p>
+    <ToolLayout
+      title="PDF Page Counter"
+      icon="🔢"
+      onBack={onBack}
+      actionBtn={
+        targetCount > 0 && (
+          <>
+            {done && (
+              <button className="reset-btn" onClick={reset}>
+                🔄 Count More PDFs
+              </button>
+            )}
+            <button
+              className="action-btn"
+              onClick={processFiles}
+              disabled={processing || targetCount === 0}
+            >
+              {processing ? "Processing..." : `🔢 Count Pages (${targetCount})`}
+            </button>
+          </>
+        )
+      }
+      sidebar={
+        <>
+          <div className="sidebar-section">
+            <p className="sidebar-section-title">Input Mode</p>
+            <div
+              className="option-row"
+              style={{ gridTemplateColumns: "1fr 1fr" }}
+            >
+              <label
+                className={`option-card ${mode === "files" ? "active" : ""}`}
+              >
+                <input
+                  type="radio"
+                  name="mode"
+                  value="files"
+                  checked={mode === "files"}
+                  onChange={() => {
+                    setMode("files");
+                    setResults([]);
+                    setDone(false);
+                  }}
+                />
+                <span>📄 Files</span>
+                <small>One or multiple PDFs</small>
+              </label>
+              <label
+                className={`option-card ${mode === "folder" ? "active" : ""}`}
+              >
+                <input
+                  type="radio"
+                  name="mode"
+                  value="folder"
+                  checked={mode === "folder"}
+                  onChange={() => {
+                    setMode("folder");
+                    setResults([]);
+                    setDone(false);
+                  }}
+                />
+                <span>📁 Folder</span>
+                <small>Auto-finds all PDFs</small>
+              </label>
+            </div>
+          </div>
 
-      {/* Mode Toggle */}
-      <div className="option-row" style={{ marginBottom: "1.5rem" }}>
-        <label className={`option-card ${mode === "files" ? "active" : ""}`}>
-          <input
-            type="radio"
-            name="mode"
-            value="files"
-            checked={mode === "files"}
-            onChange={() => {
-              setMode("files");
-              setResults([]);
-              setDone(false);
-            }}
-          />
-          <span>📄 Select PDF Files</span>
-          <small>Select one or multiple PDF files</small>
-        </label>
-        <label className={`option-card ${mode === "folder" ? "active" : ""}`}>
-          <input
-            type="radio"
-            name="mode"
-            value="folder"
-            checked={mode === "folder"}
-            onChange={() => {
-              setMode("folder");
-              setResults([]);
-              setDone(false);
-            }}
-          />
-          <span>📁 Select Folder</span>
-          <small>Auto-finds all PDFs in folder</small>
-        </label>
-      </div>
+          {targetCount > 0 && (
+            <div className="sidebar-section">
+              <p className="sidebar-section-title">Selected</p>
+              <p className="range-hint">
+                {targetCount} PDF{targetCount > 1 ? "s" : ""}{" "}
+                {mode === "folder" ? "found in folder" : "selected"}
+              </p>
+            </div>
+          )}
 
-      {/* File Mode */}
+          {done && (
+            <div className="sidebar-section">
+              <p className="success-msg">
+                {results.length > 1 ? "✅ Excel file downloaded!" : "✅ Done!"}
+              </p>
+            </div>
+          )}
+
+          {targetCount === 0 && (
+            <div className="tool-tip">
+              💡 Select PDF files, or a whole folder — all PDFs inside will be
+              auto-detected. One file shows the count on screen, multiple files
+              export to Excel.
+            </div>
+          )}
+        </>
+      }
+    >
       {mode === "files" && (
-        <div className="upload-box">
+        <div className="tool-upload-area">
           <input
             type="file"
             accept=".pdf"
@@ -179,9 +274,8 @@ export default function PageCounter() {
         </div>
       )}
 
-      {/* Folder Mode */}
       {mode === "folder" && (
-        <div className="upload-box">
+        <div className="tool-upload-area">
           <input
             type="file"
             webkitdirectory="true"
@@ -199,35 +293,52 @@ export default function PageCounter() {
         </div>
       )}
 
-      {/* Files selected info */}
-      {mode === "files" && files.length > 0 && results.length === 0 && (
-        <div className="file-list">
-          <p>
-            ✅ {files.length} PDF{files.length > 1 ? "s" : ""} selected
-          </p>
-          {files.map((f, i) => (
-            <div key={i} className="file-item">
-              📄 {f.name}
+      {loadingThumbs && (
+        <div className="progress-box">
+          <div className="progress-bar">
+            <div className="progress-fill" style={{ width: "70%" }}></div>
+          </div>
+          <p className="progress-text">Generating previews...</p>
+        </div>
+      )}
+
+      {!loadingThumbs && activeFiles.length > 0 && results.length === 0 && (
+        <div className="page-thumb-grid">
+          {activeFiles.map((f, i) => (
+            <div key={i} className="page-thumb-card">
+              {thumbnails[i] ? (
+                <img src={thumbnails[i]} alt={f.name} />
+              ) : (
+                <div
+                  style={{
+                    height: "120px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    background: "#f8f7ff",
+                    fontSize: "2rem",
+                  }}
+                >
+                  📄
+                </div>
+              )}
+              <span
+                className="page-thumb-number"
+                style={{
+                  whiteSpace: "nowrap",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  padding: "0.4rem 0.3rem",
+                }}
+                title={f.name}
+              >
+                {f.name}
+              </span>
             </div>
           ))}
         </div>
       )}
 
-      {mode === "folder" && folderFiles.length > 0 && results.length === 0 && (
-        <div className="file-list">
-          <p>
-            ✅ {folderFiles.length} PDF{folderFiles.length > 1 ? "s" : ""} found
-            in folder
-          </p>
-          {folderFiles.map((f, i) => (
-            <div key={i} className="file-item">
-              📄 {f.webkitRelativePath || f.name}
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Single file result */}
       {results.length === 1 && (
         <div className="counter-result">
           <div className="counter-file-name">📄 {results[0]["File Name"]}</div>
@@ -239,7 +350,6 @@ export default function PageCounter() {
         </div>
       )}
 
-      {/* Multiple results table */}
       {results.length > 1 && (
         <>
           <div className="counter-summary">
@@ -280,50 +390,6 @@ export default function PageCounter() {
           </div>
         </>
       )}
-
-      <button
-        className="action-btn"
-        onClick={processFiles}
-        disabled={
-          processing ||
-          (mode === "files" && files.length === 0) ||
-          (mode === "folder" && folderFiles.length === 0)
-        }
-      >
-        {processing ? "Processing..." : "🔢 Count Pages"}
-      </button>
-
-      {done && results.length > 1 && (
-        <>
-          <p className="success-msg">
-            ✅ Done! Excel file downloaded successfully.
-          </p>
-          <button
-            className="reset-btn"
-            onClick={() => {
-              setFiles([]);
-              setFolderFiles([]);
-              setResults([]);
-              setDone(false);
-            }}
-          >
-            🔄 Count More PDFs
-          </button>
-        </>
-      )}
-
-      {done && results.length === 1 && (
-        <button
-          className="reset-btn"
-          onClick={() => {
-            setFiles([]);
-            setResults([]);
-            setDone(false);
-          }}
-        >
-          🔄 Count Another PDF
-        </button>
-      )}
-    </div>
+    </ToolLayout>
   );
 }
