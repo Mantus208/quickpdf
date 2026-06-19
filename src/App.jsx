@@ -140,34 +140,79 @@ const toolLayoutTools = [
   "pdf2word",
   "watermark",
 ];
+const getInitialTool = () => {
+  const path = window.location.pathname.replace("/", "");
+  const toolMap = {
+    "merge-pdf": "merge",
+    "compress-pdf": "compress",
+    "split-pdf": "split",
+    "pdf-to-jpg": "pdf2jpg",
+    "jpg-to-pdf": "jpg2pdf",
+    "pdf-page-counter": "counter",
+    "unlock-pdf": "unlock",
+    "edit-pdf": "editpdf",
+    "rotate-pdf": "rotate",
+    "pdf-to-word": "pdf2word",
+    "watermark-pdf": "watermark",
+  };
+  return toolMap[path] || null;
+};
+
 export default function App() {
-  const [activeTool, setActiveTool] = useState(null);
+  // useEffect ki zaroorat khatam! Seedha URL se state set hogi
+  const [activeTool, setActiveTool] = useState(getInitialTool);
   const [menuOpen, setMenuOpen] = useState(false);
+
+  // URL aur Tool dono ek sath badalne ka function
+  const handleToolSelect = (toolId) => {
+    setActiveTool(toolId);
+    setMenuOpen(false);
+
+    const reverseMap = {
+      merge: "merge-pdf",
+      compress: "compress-pdf",
+      split: "split-pdf",
+      pdf2jpg: "pdf-to-jpg",
+      jpg2pdf: "jpg-to-pdf",
+      counter: "pdf-page-counter",
+      unlock: "unlock-pdf",
+      editpdf: "edit-pdf",
+      rotate: "rotate-pdf",
+      pdf2word: "pdf-to-word",
+      watermark: "watermark-pdf",
+    };
+
+    if (toolId && reverseMap[toolId]) {
+      window.history.pushState({}, "", `/${reverseMap[toolId]}`);
+    } else {
+      window.history.pushState({}, "", "/");
+    }
+  };
 
   const renderTool = () => {
     switch (activeTool) {
       case "merge":
-        return <MergePDF onBack={() => setActiveTool(null)} />;
+        return <MergePDF onBack={() => handleToolSelect(null)} />;
       case "compress":
-        return <CompressPDF onBack={() => setActiveTool(null)} />;
+        return <CompressPDF onBack={() => handleToolSelect(null)} />;
       case "split":
-        return <SplitPDF onBack={() => setActiveTool(null)} />;
+        return <SplitPDF onBack={() => handleToolSelect(null)} />;
       case "pdf2jpg":
-        return <PDFtoJPG onBack={() => setActiveTool(null)} />;
+        return <PDFtoJPG onBack={() => handleToolSelect(null)} />;
       case "jpg2pdf":
-        return <JPGtoPDF onBack={() => setActiveTool(null)} />;
+        return <JPGtoPDF onBack={() => handleToolSelect(null)} />;
       case "counter":
-        return <PageCounter onBack={() => setActiveTool(null)} />;
+        return <PageCounter onBack={() => handleToolSelect(null)} />;
       case "unlock":
-        return <UnlockPDF onBack={() => setActiveTool(null)} />;
+        return <UnlockPDF onBack={() => handleToolSelect(null)} />;
       case "editpdf":
-        return <EditPDF onBack={() => setActiveTool(null)} />;
+        return <EditPDF onBack={() => handleToolSelect(null)} />;
       case "rotate":
-        return <RotatePDF onBack={() => setActiveTool(null)} />;
+        return <RotatePDF onBack={() => handleToolSelect(null)} />;
       case "pdf2word":
-        return <PDFtoWord onBack={() => setActiveTool(null)} />;
+        return <PDFtoWord onBack={() => handleToolSelect(null)} />;
       case "watermark":
-        return <WatermarkPDF onBack={() => setActiveTool(null)} />;
+        return <WatermarkPDF onBack={() => handleToolSelect(null)} />;
       default:
         return null;
     }
@@ -177,7 +222,7 @@ export default function App() {
     <div className="app">
       {/* Navbar */}
       <nav className="navbar">
-        <div className="nav-logo" onClick={() => setActiveTool(null)}>
+        <div className="nav-logo" onClick={() => handleToolSelect(null)}>
           <Logo className="nav-logo-icon" />
           <div
             style={{ fontSize: "24px", fontWeight: "700", color: "#1E293B" }}
@@ -234,7 +279,7 @@ export default function App() {
         renderTool()
       ) : (
         <main className="tool-page">
-          <button className="back-btn" onClick={() => setActiveTool(null)}>
+          <button className="back-btn" onClick={() => handleToolSelect(null)}>
             ← Back to All Tools
           </button>
           {renderTool()}
