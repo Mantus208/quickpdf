@@ -9,6 +9,8 @@ import Logo from "./components/Logo";
 import UnlockPDF from "./tools/UnlockPDF";
 import EditPDF from "./tools/EditPDF";
 import RotatePDF from "./tools/RotatePDF";
+import PDFtoWord from "./tools/PDFtoWord";
+import WatermarkPDF from "./tools/WatermarkPDF";
 import "./App.css";
 
 const tools = [
@@ -106,6 +108,24 @@ const tools = [
     iconBg: "#f5edff",
     tag: "New",
   },
+  {
+    id: "pdf2word",
+    icon: "📝",
+    name: "PDF to Word",
+    desc: "Convert PDF to editable Word document with formatting preserved.",
+    accent: "#2980b9",
+    iconBg: "#eaf4ff",
+    tag: "New",
+  },
+  {
+    id: "watermark",
+    icon: "💧",
+    name: "Add Watermark",
+    desc: "Add custom text watermark to all pages of your PDF instantly.",
+    accent: "#0984e3",
+    iconBg: "#eaf4ff",
+    tag: "New",
+  },
 ];
 const toolLayoutTools = [
   "merge",
@@ -117,6 +137,8 @@ const toolLayoutTools = [
   "unlock",
   "editpdf",
   "rotate",
+  "pdf2word",
+  "watermark",
 ];
 export default function App() {
   const [activeTool, setActiveTool] = useState(null);
@@ -142,6 +164,10 @@ export default function App() {
         return <EditPDF onBack={() => setActiveTool(null)} />;
       case "rotate":
         return <RotatePDF onBack={() => setActiveTool(null)} />;
+      case "pdf2word":
+        return <PDFtoWord onBack={() => setActiveTool(null)} />;
+      case "watermark":
+        return <WatermarkPDF onBack={() => setActiveTool(null)} />;
       default:
         return null;
     }
@@ -153,7 +179,11 @@ export default function App() {
       <nav className="navbar">
         <div className="nav-logo" onClick={() => setActiveTool(null)}>
           <Logo className="nav-logo-icon" />
-          <span>QuickPDF</span>
+          <div
+            style={{ fontSize: "24px", fontWeight: "700", color: "#1E293B" }}
+          >
+            PDF<span style={{ color: "#3B82F6" }}>Babu</span>
+          </div>
         </div>
         <div className={`nav-links ${menuOpen ? "open" : ""}`}>
           {tools.map((tool) => (
@@ -212,7 +242,7 @@ export default function App() {
       )}
       <footer>
         <div className="footer-inner">
-          <span>© 2026 QuickPDF — All rights reserved</span>
+          <span>© 2026 PDFBabu — All rights reserved</span>
 
           <a
             href="https://arkasoft.in"

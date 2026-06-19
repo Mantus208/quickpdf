@@ -101,12 +101,7 @@ export default function MergePDF({ onBack }) {
       onBack={onBack}
       actionBtn={
         files.length > 0 && (
-          <>
-            {done && (
-              <button className="reset-btn" onClick={reset}>
-                🔄 Merge Another PDF
-              </button>
-            )}
+          <div className="action-btn-group">
             <button
               className="action-btn"
               onClick={mergePDFs}
@@ -114,7 +109,12 @@ export default function MergePDF({ onBack }) {
             >
               {merging ? "Merging..." : `🔗 Merge PDF (${files.length} files)`}
             </button>
-          </>
+            {done && (
+              <button className="reset-btn" onClick={reset}>
+                🔄 Merge Another PDF
+              </button>
+            )}
+          </div>
         )
       }
       sidebar={

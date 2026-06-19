@@ -177,7 +177,7 @@ export default function EditPDF() {
       const a = document.createElement("a");
       a.href = url;
       const originalName = file.name.replace(".pdf", "");
-      a.download = `${originalName}_Edited_by_QuickPDF.pdf`;
+      a.download = `${originalName}_Edited_by_PDFBabu.pdf`;
       a.click();
     } catch {
       alert("Failed to save PDF.");

@@ -148,15 +148,22 @@ export default function SplitPDF({ onBack }) {
       onBack={onBack}
       actionBtn={
         file && (
-          <button
-            className="action-btn"
-            onClick={splitPDF}
-            disabled={splitting || !file || includedCount === 0}
-          >
-            {splitting
-              ? "Splitting..."
-              : `✂️ Split PDF (${includedCount} pages)`}
-          </button>
+          <div className="action-btn-group">
+            <button
+              className="action-btn"
+              onClick={splitPDF}
+              disabled={splitting || !file || includedCount === 0}
+            >
+              {splitting
+                ? "Splitting..."
+                : `✂️ Split PDF (${includedCount} pages)`}
+            </button>
+            {done && (
+              <button className="reset-btn" onClick={reset}>
+                🔄 Split Another PDF
+              </button>
+            )}
+          </div>
         )
       }
       sidebar={
@@ -249,13 +256,6 @@ export default function SplitPDF({ onBack }) {
               {done && (
                 <div className="sidebar-section">
                   <p className="success-msg">✅ Done! Download started.</p>
-                  <button
-                    className="reset-btn"
-                    onClick={reset}
-                    style={{ marginTop: "0.8rem" }}
-                  >
-                    🔄 Split Another PDF
-                  </button>
                 </div>
               )}
             </>

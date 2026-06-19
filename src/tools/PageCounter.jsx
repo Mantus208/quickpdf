@@ -167,12 +167,7 @@ export default function PageCounter({ onBack }) {
       onBack={onBack}
       actionBtn={
         targetCount > 0 && (
-          <>
-            {done && (
-              <button className="reset-btn" onClick={reset}>
-                🔄 Count More PDFs
-              </button>
-            )}
+          <div className="action-btn-group">
             <button
               className="action-btn"
               onClick={processFiles}
@@ -180,7 +175,12 @@ export default function PageCounter({ onBack }) {
             >
               {processing ? "Processing..." : `🔢 Count Pages (${targetCount})`}
             </button>
-          </>
+            {done && (
+              <button className="reset-btn" onClick={reset}>
+                🔄 Count More PDFs
+              </button>
+            )}
+          </div>
         )
       }
       sidebar={

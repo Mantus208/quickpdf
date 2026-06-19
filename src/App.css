@@ -6,18 +6,38 @@
 
 html,
 body {
-  font-family: 'Segoe UI', sans-serif;
+  /* font-family: 'Segoe UI', sans-serif; */
   background: #f8f7ff;
   color: #1a1040;
   width: 100%;
   height: auto;
   min-height: 100%;
   overflow-y: auto;
+  /* background-color: var(--bg-dark-main); */
+  color: var(--color-text-white);
+  margin: 0;
+  font-family: Segoe UI, sans-serif;
 }
 
 #root {
   width: 100%;
   min-height: 100vh;
+}
+
+/* ArkaSoft Premium Dark Theme Variables */
+:root {
+  --bg-dark-main: #0B0F19;
+  /* Pure deep layout background */
+  --bg-dark-card: #111827;
+  /* Clean solid surface for cards */
+  --color-text-white: #FFFFFF;
+  /* Crisp headings and branding */
+  --color-text-gray: #9CA3AF;
+  /* Readable gray description text */
+  --arkasoft-blue: #3B82F6;
+  /* Bright interactive blue element */
+  --border-dark: #1F2937;
+  /* Subtle split lines */
 }
 
 .app {
@@ -33,6 +53,7 @@ body {
   padding: 0 2rem;
   height: 60px;
   background: #fff;
+  /* background: var(--bg-dark-main); */
   border-bottom: 1.5px solid #ede9ff;
   position: sticky;
   top: 0;
@@ -40,11 +61,30 @@ body {
 }
 
 .nav-logo {
-  font-size: 1.2rem;
-  font-weight: 700;
-  color: #6C3FF5;
+  display: flex;
+  align-items: center;
+  gap: 8px;
   cursor: pointer;
+}
+
+.brand-text {
+  font-size: 24px;
+  font-weight: 700;
   letter-spacing: -0.5px;
+}
+
+.brand-main {
+  color: var(--color-text-white);
+}
+
+.brand-accent {
+  color: var(--arkasoft-blue);
+  /* Babu blue highlight mein */
+}
+
+.brand-highlight {
+  color: #111827;
+  /* 'PDF' standard dark color mein rahega */
 }
 
 .nav-links {
@@ -1971,4 +2011,176 @@ footer {
 
 .edited-text-preview {
   position: relative;
+}
+
+/* PDF to Word */
+.word-feature-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.word-feature-item {
+  font-size: 0.82rem;
+  color: #1a1040;
+  padding: 0.3rem 0;
+  border-bottom: 1px solid #f0ecff;
+}
+
+.word-feature-item:last-child {
+  border-bottom: none;
+}
+
+.error-msg {
+  color: #e74c3c;
+  font-size: 0.88rem;
+  font-weight: 600;
+  text-align: center;
+}
+
+/* PDF to Word Compatibility Notice */
+.compat-notice {
+  background: #fff9e6;
+  border: 1.5px solid #f39c12;
+  border-radius: 10px;
+  padding: 0.8rem;
+}
+
+.compat-title {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #856404;
+  margin-bottom: 0.5rem;
+}
+
+.compat-item {
+  font-size: 0.8rem;
+  padding: 0.25rem 0;
+  color: #1a1040;
+}
+
+.compat-ok {
+  color: #00a36c;
+  font-weight: 600;
+}
+
+.compat-no {
+  color: #e74c3c;
+  font-weight: 600;
+}
+
+.action-btn-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+  width: 100%;
+}
+
+.action-btn-group .action-btn {
+  width: 100%;
+  margin: 0;
+}
+
+.action-btn-group .reset-btn {
+  width: 100%;
+  margin: 0;
+}
+
+/* Watermark Live Preview */
+.wm-preview-wrap {
+  margin-top: 1.5rem;
+}
+
+.wm-canvas-wrap {
+  position: relative;
+  width: 100%;
+  border: 1.5px solid #ede9ff;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 16px rgba(108, 63, 245, 0.08);
+}
+
+.wm-canvas-pdf {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.wm-canvas-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+/* Watermark Controls */
+.wm-text-input {
+  width: 100%;
+  padding: 0.7rem 1rem;
+  border: 1.5px solid #ede9ff;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  color: #1a1040;
+  outline: none;
+  transition: border 0.2s;
+  font-family: 'Segoe UI', sans-serif;
+}
+
+.wm-text-input:focus {
+  border-color: #6C3FF5;
+}
+
+.wm-slider {
+  width: 100%;
+  accent-color: #6C3FF5;
+  cursor: pointer;
+  margin-top: 0.4rem;
+}
+
+.wm-color-row {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  margin-bottom: 0.6rem;
+}
+
+.wm-color-picker {
+  width: 44px;
+  height: 36px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  padding: 0;
+}
+
+.wm-color-label {
+  font-size: 0.82rem;
+  color: #7c6fac;
+  font-weight: 600;
+}
+
+.wm-color-presets {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.wm-color-preset {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.wm-color-preset.active {
+  border-color: #1a1040;
+  transform: scale(1.2);
+}
+
+.wm-color-preset:hover {
+  transform: scale(1.15);
 }

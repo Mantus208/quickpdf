@@ -183,7 +183,7 @@ export default function UnlockPDF({ onBack }) {
       const a = document.createElement("a");
       a.href = url;
       const originalName = file.name.replace(".pdf", "");
-      a.download = `${originalName}_Unlocked_by_QuickPDF.pdf`;
+      a.download = `${originalName}_Unlocked_by_PDFBabu.pdf`;
       a.click();
 
       setDone(true);
@@ -212,12 +212,7 @@ export default function UnlockPDF({ onBack }) {
       actionBtn={
         file &&
         pdfInfo && (
-          <>
-            {done && (
-              <button className="reset-btn" onClick={reset}>
-                🔄 Unlock Another PDF
-              </button>
-            )}
+          <div className="action-btn-group">
             <button
               className="action-btn"
               onClick={unlockPDF}
@@ -225,7 +220,12 @@ export default function UnlockPDF({ onBack }) {
             >
               {unlocking ? `Unlocking ${progress}%...` : "🔓 Unlock PDF"}
             </button>
-          </>
+            {done && (
+              <button className="reset-btn" onClick={reset}>
+                🔄 Unlock Another PDF
+              </button>
+            )}
+          </div>
         )
       }
       sidebar={

@@ -90,12 +90,7 @@ export default function JPGtoPDF({ onBack }) {
       onBack={onBack}
       actionBtn={
         files.length > 0 && (
-          <>
-            {done && (
-              <button className="reset-btn" onClick={reset}>
-                🔄 Convert More Images
-              </button>
-            )}
+          <div className="action-btn-group">
             <button
               className="action-btn"
               onClick={convertToPDF}
@@ -105,7 +100,12 @@ export default function JPGtoPDF({ onBack }) {
                 ? "Converting..."
                 : `📄 Convert to PDF (${files.length})`}
             </button>
-          </>
+            {done && (
+              <button className="reset-btn" onClick={reset}>
+                🔄 Convert More Images
+              </button>
+            )}
+          </div>
         )
       }
       sidebar={

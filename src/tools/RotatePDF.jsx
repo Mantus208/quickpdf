@@ -92,7 +92,7 @@ export default function RotatePDF({ onBack }) {
     const a = document.createElement("a");
     a.href = url;
     const originalName = file.name.replace(".pdf", "");
-    a.download = `${originalName}_Rotated_by_QuickPDF.pdf`;
+    a.download = `${originalName}_Rotated_by_PDFBabu.pdf`;
     a.click();
 
     setRotating(false);
@@ -116,12 +116,7 @@ export default function RotatePDF({ onBack }) {
       onBack={onBack}
       actionBtn={
         file && (
-          <>
-            {done && (
-              <button className="reset-btn" onClick={reset}>
-                🔄 Rotate Another PDF
-              </button>
-            )}
+          <div className="action-btn-group">
             <button
               className="action-btn"
               onClick={applyRotation}
@@ -131,7 +126,12 @@ export default function RotatePDF({ onBack }) {
                 ? "Rotating..."
                 : `🔄 Save Rotated PDF (${rotatedCount} pages)`}
             </button>
-          </>
+            {done && (
+              <button className="reset-btn" onClick={reset}>
+                🔄 Rotate Another PDF
+              </button>
+            )}
+          </div>
         )
       }
       sidebar={

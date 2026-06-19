@@ -111,12 +111,7 @@ export default function PDFtoJPG({ onBack }) {
       onBack={onBack}
       actionBtn={
         file && (
-          <>
-            {done && (
-              <button className="reset-btn" onClick={reset}>
-                🔄 Convert Another PDF
-              </button>
-            )}
+          <div className="action-btn-group">
             <button
               className="action-btn"
               onClick={convertToJPG}
@@ -124,7 +119,12 @@ export default function PDFtoJPG({ onBack }) {
             >
               {converting ? `Converting ${progress}%...` : "🖼️ Convert to JPG"}
             </button>
-          </>
+            {done && (
+              <button className="reset-btn" onClick={reset}>
+                🔄 Convert Another PDF
+              </button>
+            )}
+          </div>
         )
       }
       sidebar={

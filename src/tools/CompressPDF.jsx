@@ -134,7 +134,14 @@ export default function CompressPDF({ onBack }) {
       onBack={onBack}
       actionBtn={
         file && (
-          <>
+          <div className="action-btn-group">
+            <button
+              className="action-btn"
+              onClick={compressPDF}
+              disabled={compressing}
+            >
+              {compressing ? `Compressing ${progress}%...` : "📦 Compress PDF"}
+            </button>
             {done && (
               <button
                 className="reset-btn"
@@ -148,15 +155,7 @@ export default function CompressPDF({ onBack }) {
                 🔄 Compress Another PDF
               </button>
             )}
-
-            <button
-              className="action-btn"
-              onClick={compressPDF}
-              disabled={compressing}
-            >
-              {compressing ? `Compressing ${progress}%...` : "📦 Compress PDF"}
-            </button>
-          </>
+          </div>
         )
       }
       sidebar={
